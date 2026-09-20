@@ -1,40 +1,39 @@
-<div align="center">
+# Work with Jev · Work message classifier
 
-<h1>Work with Jev</h1>
+**Too many work messages? Use Jev to find what needs you, then keep it in one cross-chat task queue.**
 
-<p><strong>Too many work messages? Find the ones that need you.</strong></p>
+[中文 README](README.md) · [Feishu setup](docs/FEISHU.md) · [WeCom setup](docs/WECOM.md)
 
-<p><a href="README.md">简体中文</a> · <strong>English</strong></p>
-
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Adkid-Zephyr/work-with-jev/pulls)
 [![Checks](https://github.com/Adkid-Zephyr/work-with-jev/actions/workflows/test.yml/badge.svg)](https://github.com/Adkid-Zephyr/work-with-jev/actions/workflows/test.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-334a6c.svg)](LICENSE)
-[![Node.js 22.9+](https://img.shields.io/badge/Node.js-22.9%2B-334a6c.svg)](https://nodejs.org/)
 
-<p><a href="#try-it-locally">Quick start</a> · <a href="#connect-feishu">Connect Feishu</a> · <a href="docs/EXTENDING.md">Add a provider</a></p>
+---
 
-<a href="https://docs.typesafe.ai/introduction">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/typesafe-dark.png">
-  <img src="docs/assets/typesafe-light.png" alt="TypeSafe AI" width="150">
-</picture>
-</a>
-<p><sub>Built with Jev · Independent community project</sub></p>
+## What is this?
 
-</div>
+Your work chats have hundreds of messages. Someone needs your approval, someone shared a useful guide, and dozens of people said “got it.” Reading everything costs time; ignoring everything risks missing your part.
 
-![Work with Jev — workflow illustration](docs/assets/workflow.svg)
+Work with Jev runs on your computer. Describe **who you are and what you do**, then let Jev help sort the messages.
 
-Choose a Feishu chat or receive WeCom bot messages, then describe your role. Jev helps sort messages into **urgent**, **my tasks**, **worth reading**, and **skip for now**. Check off what you finish. Click the chat name to search or switch chats. Add messages to a persistent cross-chat task queue and drag to reorder; switching chats preserves your previous work.
+> **Find what needs your attention, then choose what is worth reading.**
 
-| Urgent | My tasks | Worth reading | Skip for now |
-| --- | --- | --- | --- |
-| The client is waiting for your confirmation | Prepare next week's topic list | An audio recording guide for your shoot | Got it 👍 |
+Add important messages to a task queue, drag to reorder, and check them off. Switching chats preserves the work you have already organized.
 
-These are illustrative examples, not live model results. The same message may matter differently to different people. The current UI is Chinese; this is an English documentation option.
+## What the result looks like
 
-## Try it locally
+| Message | Category | Next step |
+| --- | --- | --- |
+| “The client is waiting. Please confirm the script now.” | Urgent | Open the original and respond |
+| “Prepare next week's topic list by Friday.” | My tasks | Add to your cross-chat queue |
+| “This audio guide might help with our shoot.” | Worth reading | Expand when needed |
+| “Got it 👍” | Skip for now | Collapsed by default |
 
-Requires **Node.js 22.9+** and npm. No account or key is needed for the preset demo.
+These are illustrative scenarios, not measured accuracy results. **The same message can matter differently to different people.** You can correct categories and read the original text.
+
+## Quick start
+
+Requires **Node.js 22.9+** and npm.
 
 ```bash
 git clone https://github.com/Adkid-Zephyr/work-with-jev.git
@@ -45,103 +44,59 @@ npm start
 
 Open **http://127.0.0.1:4173**. On macOS, you can also double-click `Start.command` after installation.
 
-Switch between the three example identities, check/uncheck messages, or click a message to inspect and correct its category. To test actual inference, enter your [TypeSafe API key](https://console.typesafe.ai/keys) in Settings and click Classify.
+### Try the demo
 
-**The keyless demo uses labeled preset results.** It does not simulate model calls or invent latency. Timing is displayed only after actual Jev requests.
+No account or key is needed. Built-in messages demonstrate the board, identities, manual classification, and task queue. The UI is currently Chinese.
 
-## Connect Feishu
+**Demo results are clearly labeled presets.** For real inference, enter a [TypeSafe API key](https://console.typesafe.ai/keys) in Settings and click Classify. Review the batch before transmission; API calls use your credit.
 
-The [official Lark/Feishu CLI](https://github.com/larksuite/cli) reads selected chats as the authorized user. No public webhook server is required.
+### Connect your messages
 
-```bash
-# Skip if the CLI already has an app configured.
-npx lark-cli config init --new
+| Source | Supported access | Setup |
+| --- | --- | --- |
+| Feishu | Selected chat messages available to the authorized user | [Official CLI setup](docs/FEISHU.md) |
+| WeCom | Direct messages to a smart bot and group @mentions | [Bot ID / long-connection Secret](docs/WECOM.md) |
 
-npx lark-cli auth login --scope "im:chat:read im:message:readonly offline_access"
-```
+WeCom bot access does not include arbitrary group messages or full pre-connection history. Live use requires your own credentials and platform permissions. Detailed setup guides are currently in Chinese.
 
-Both application permissions and user consent must be satisfied; your organization may require administrator approval. Respond to specific missing read scopes instead of granting every permission.
+## Features
 
-The approximately 10-minute device-link lifetime is **not** the login lifetime. `offline_access` permits renewal while the refresh credential remains valid. Feishu controls expiry; this project cannot promise an arbitrary 3- or 7-day session. Inspect it with:
+- **Classify:** urgent, tasks, useful, or skip; select 1–200 messages, default 50.
+- **Read:** compact previews, full-text details, collapsed low-priority messages, and official Feishu deep links when available.
+- **Manage:** correct categories, collect tasks across chats, reorder, complete, and undo completion.
+- **Retain:** organized items survive page reloads; system membership notices are filtered.
+- **Control:** fetching and model inference are separate. No automatic replies or execution of work tasks.
 
-```bash
-npx lark-cli auth status --json --verify
-```
+## Why Jev?
 
-Then check the connection in Settings, choose Feishu messages, search for a chat, and describe your identity. Select **1–200 messages, default 50**. The board follows this limit. Classify automatically fetches the requested recent messages before showing the transmission preview. Click Classify and review the messages before confirming transmission to TypeSafe.
+This step needs a few judgments: **Is it relevant to me? Does it require action? Is it urgent? Is it useful?**
 
-Fetching messages does not itself send them to Jev.
+Jev returns probabilities for those judgments. Code assigns the categories without first generating a long answer and parsing it. You control the final action.
 
-## Connect WeCom
+Probabilities are not accuracy guarantees. Validate the initial thresholds on your own messages. See [storage, batching, and limitations](docs/USAGE.md). Browser state uses localStorage; WeCom additionally keeps a bounded local inbox. Keys entered through Settings remain in server memory and must be re-entered after restart unless configured in `.env`.
 
-In Settings, enter a smart bot Bot ID and long-connection Secret. Enable API mode / persistent connection in WeCom first. After authentication, DM the bot or @mention it in a group. Select WeCom messages; an empty search lists received conversations.
+## Extend and contribute
 
-This receives bot interactions, not arbitrary chat history. No public callback URL is required. See [setup and access boundaries](docs/WECOM.md). Live verification requires your own credentials.
+Message providers are separate from classification logic. Contributions can fix issues or add providers such as DingTalk and Slack.
 
-## Handle unclassified messages
-
-Choose a category manually or add directly to the task queue (also assigns My tasks). These operations do not call Jev. Official message app links appear as Open in Feishu, including in task details and the queue. Refresh older cached messages to retrieve links; missing links are indicated rather than invented. The Feishu client must be signed in with access to the conversation.
-
-## How it works
+[Contributing](CONTRIBUTING.md) · [Provider guide](docs/EXTENDING.md) · [Report an issue](https://github.com/Adkid-Zephyr/work-with-jev/issues/new/choose) · [Use this template](https://github.com/Adkid-Zephyr/work-with-jev/generate)
 
 ```text
-Recent messages + your identity and responsibilities
-                        ↓
-               Jev's typed judgments
-      relevant? requires action? urgent? useful?
-                        ↓
-               Four columns, in code
-                        ↓
-              Review, correct, complete
+work-with-jev/
+├── dist/                 Chinese UI
+├── lib/core.mjs          Message handling and classification
+├── lib/providers/        Feishu, WeCom, and adapter template
+├── server.mjs            Local service and Jev requests
+├── tests/                Offline regression tests
+└── docs/                 Setup guides and review records
 ```
 
-Probabilities are available in message details; ambiguous signals are marked for review. Completion and manual overrides stay under your control.
+Run `npm run check` and `npm test`. See the [browser interaction review](docs/qa/REVIEW.md) and [maintenance handoff](docs/qa/SESSION.md). Offline tests do not establish live platform or model performance.
 
-## Integrations
+## Credits and license
 
-- **Implemented:** preset examples, Feishu user-authorized chat reads, WeCom smart-bot persistent connection, Jev classification, persistent local completion and manual categories.
-- **Extension point:** read-only adapters in `lib/providers/`. See [the guide](docs/EXTENDING.md) and [template](lib/providers/example.mjs).
-- **Not implemented:** WeCom conversation archiving, DingTalk, Slack, or other work apps. A bot's message callback is not equivalent to unrestricted chat history access.
+Built on [TypeSafe / Jev](https://docs.typesafe.ai/introduction), [Lark CLI](https://github.com/larksuite/cli), and the [WeCom SDK](https://github.com/WecomTeam/aibot-node-sdk). The task-to-result presentation was inspired by [Jev Ultrafast](https://github.com/browser-use/jev-ultrafast); no code or performance figures were copied.
 
-## Data and limits
+<a href="https://docs.typesafe.ai/introduction"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/typesafe-dark.png"><img src="docs/assets/typesafe-light.png" alt="TypeSafe AI" width="120"></picture></a>
 
-<details>
-<summary>Storage, permissions and model boundaries</summary>
-
-
-- Binds to `127.0.0.1` only. Not a hosted multi-user service.
-- Message text, categories, completion, and cross-chat task order live in browser localStorage. Clearing site data removes them. Use the same browser and URL.
-- Keys entered in the UI remain in server memory and must be entered again after a restart. For persistent local configuration, copy `.env.example` to `.env` and set `TYPESAFE_API_KEY`. Never commit credentials.
-- Confirmed classification sends selected messages and identity context to TypeSafe and uses your API credit. Feishu credentials are managed by its CLI.
-- WeCom keeps at most 1,000 received messages in the ignored local file `.data/wecom-inbox.json`; timestamps are receipt times. Credentials are held in memory or supplied through local environment configuration.
-- Text, rich text, and platform-supplied WeCom voice transcripts only. No attachment downloads, OCR, or transcription. Bounded pagination does not guarantee full history or complete thread replies.
-- Selections are split into requests of up to 20 messages and approximately 20,000 body characters. Batches do not share context. Completed batches survive a later failure.
-- Probabilities are not accuracy guarantees. Initial thresholds are not calibrated on your workload. The app does not reply, delete messages, execute tasks, or automatically merge/close tasks across updates.
-- No public end-to-end accuracy or speed benchmark is claimed. Offline tests do not validate live platform or model behavior.
-
-</details>
-
-## Open source & contributions
-
-The application code is open source under the [MIT License](LICENSE): you may use, modify, redistribute, and use it commercially subject to the license terms. Jev remains an external TypeSafe service; its model weights and service are not included. Third-party logos retain their original ownership.
-
-[Contributing guide](CONTRIBUTING.md) · [Report an issue](https://github.com/Adkid-Zephyr/work-with-jev/issues/new/choose) · [Use this template](https://github.com/Adkid-Zephyr/work-with-jev/generate)
-
-## Development
-
-```bash
-npm run check
-npm test
-```
-
-`dist/` contains the UI, `lib/core.mjs` the classification logic, `lib/providers/` the adapters, and `server.mjs` the local API. Tests use no credentials or paid model calls.
-
-Interaction checks and evidence boundaries: [review](docs/qa/REVIEW.md), [maintenance handoff](docs/qa/SESSION.md).
-
-## Inspiration
-
-Inspired by [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast): present a concrete task and show execution and results. Our demo story is **messages in → four categories → check off completed work**. No code or performance figures were copied from that project.
-
-Built on [TypeSafe / Jev](https://docs.typesafe.ai/introduction) and [Lark CLI](https://github.com/larksuite/cli). This is an independent project, not an official product of either service.
-
-[MIT License](LICENSE) · [Asset attribution](docs/assets/ATTRIBUTION.md)
+Application code is under [MIT](LICENSE). Jev's model and API remain external services. This is an independent project without implied vendor endorsement. [Logo attribution](docs/assets/ATTRIBUTION.md).

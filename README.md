@@ -1,40 +1,39 @@
-<div align="center">
+# Work with Jev · 工作消息分类器
 
-<h1>Work with Jev</h1>
+**工作群消息太多？用 Jev 挑出需要你处理的事，整理成一份跨群待办。**
 
-<p><strong>工作群消息太多？把需要你处理的事挑出来。</strong></p>
+[English README](README.en.md) · [飞书接入](docs/FEISHU.md) · [企业微信接入](docs/WECOM.md)
 
-<p><strong>简体中文</strong> · <a href="README.en.md">English</a></p>
-
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Adkid-Zephyr/work-with-jev/pulls)
 [![Checks](https://github.com/Adkid-Zephyr/work-with-jev/actions/workflows/test.yml/badge.svg)](https://github.com/Adkid-Zephyr/work-with-jev/actions/workflows/test.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-334a6c.svg)](LICENSE)
-[![Node.js 22.9+](https://img.shields.io/badge/Node.js-22.9%2B-334a6c.svg)](https://nodejs.org/)
 
-<p><a href="#先试一下">快速上手</a> · <a href="#接上自己的飞书">连接飞书</a> · <a href="docs/EXTENDING.md">扩展接入</a></p>
+---
 
-<a href="https://docs.typesafe.ai/introduction">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/typesafe-dark.png">
-  <img src="docs/assets/typesafe-light.png" alt="TypeSafe AI" width="150">
-</picture>
-</a>
-<p><sub>基于 Jev 构建 · 独立社区项目</sub></p>
+## 这是什么
 
-</div>
+工作群刷了几百条消息。有人催你确认方案，有人分享资料，还有几十条“收到”。逐条翻，浪费时间；全部忽略，又怕漏掉自己的事。
 
-![Work with Jev — workflow illustration](docs/assets/workflow.svg)
+Work with Jev 是一个在自己电脑运行的消息分类器。告诉它**你是谁、负责什么**，它用 Jev 辅助判断消息该放在哪一类。
 
-选一个飞书群，或接收企业微信机器人消息，告诉它你是谁。Jev 判断哪些需要马上处理、哪些是你的待办、哪些值得一看。做完一件，勾掉一件。点群名随时搜索切换；把消息加入跨群待办队列，拖动安排顺序，已整理的内容不会因切群消失。
+> **先找到需要你处理的事，再决定哪些值得看。**
 
-| 紧急处理 | 我的待办 | 值得一看 | 暂时略过 |
-| --- | --- | --- | --- |
-| 客户正在等，麻烦现在确认脚本 | 周五前整理下期选题 | 这份收音指南适合本次拍摄 | 收到 👍 |
+重要消息加入待办，拖动安排顺序，做完打勾。切换群聊后，已经整理好的事项仍然保留。
 
-上表为示例，不是模型实测。**同一条消息，对不同的人，重要程度可能不同。** 软件把你的姓名、职责和消息一起交给 Jev，而不只是看到“马上”就标红。
+## 分完之后是什么样
 
-## 先试一下
+| 群里的消息 | 整理到哪里 | 你可以做什么 |
+| --- | --- | --- |
+| “客户正在等，麻烦现在确认脚本。” | 紧急处理 | 打开原消息，优先回复 |
+| “周五前整理好下期选题。” | 我的待办 | 加入跨群队列，完成后打勾 |
+| “这份收音指南，这次拍摄可以参考。” | 值得一看 | 需要时展开阅读 |
+| “收到 👍” | 暂时略过 | 默认折叠，减少干扰 |
 
-需要 **Node.js 22.9+**、npm。演示模式不需要任何账号或密钥。
+以上是场景示意，不是准确率评测。**同一条消息，对不同的人，重要程度可能不同。** 分类可以人工纠正，原文始终保留。
+
+## 快速开始
+
+需要 **Node.js 22.9+** 和 npm。
 
 ```bash
 git clone https://github.com/Adkid-Zephyr/work-with-jev.git
@@ -43,126 +42,61 @@ npm ci
 npm start
 ```
 
-打开 **http://127.0.0.1:4173**。macOS 用户完成安装后，也可以双击 `Start.command`。
+打开 **http://127.0.0.1:4173**。macOS 用户安装后也可以双击 `Start.command`。
 
-1. 看四列消息，切换“小王 / 小李 / 小陈”，观察不同身份的分类。
-2. 勾选完成，再次点击撤销；点击消息原文查看详情或纠正分类。
-3. 想验证模型效果，在右上角「设置」填入 [TypeSafe API Key](https://console.typesafe.ai/keys)，点击「分类」。
+### 先看演示
 
-**无需密钥的模式使用明确标注的预设分类，不会假装调用模型。** 实际调用 Jev 后才显示真实请求耗时。英文 README 不代表界面已支持英文；当前 UI 为中文。
+不用注册、不用密钥。用内置消息体验四类看板、身份切换、手动分类和待办管理。
 
-## 接上自己的飞书
+**演示使用标注清楚的预设结果。** 想测试真实模型，在「设置」填写 [TypeSafe API Key](https://console.typesafe.ai/keys)，再点「分类」。发送前可核对消息，调用会消耗你的 API 额度。
 
-使用 [飞书官方 CLI](https://github.com/larksuite/cli) 的用户授权，手动读取选定的群。无需部署公网回调，不需要先实现消息机器人。
+### 再接上自己的消息
 
-在项目目录运行：
+| 来源 | 目前接收范围 | 接入方法 |
+| --- | --- | --- |
+| 飞书 | 用户授权可读取的所选群消息 | [官方 CLI 配置与登录](docs/FEISHU.md) |
+| 企业微信 | 私聊智能机器人、群内 @机器人的消息 | [Bot ID / 长连接 Secret 配置](docs/WECOM.md) |
 
-```bash
-# 首次配置：按官方链接完成应用创建 / 配置；已有配置则跳过
-npx lark-cli config init --new
+企业微信入口不等于任意群聊全量读取，也不包含连接前的完整历史。真实连接需要你自己的凭证和平台权限。
 
-# 申请读取权限和登录续期能力
-npx lark-cli auth login --scope "im:chat:read im:message:readonly offline_access"
-```
+## 功能速览
 
-用户授权和应用后台权限都要满足，团队可能需要管理员批准。若平台返回额外权限要求，按具体错误开通所需的只读权限，而不是申请全部权限。
+- **分类**：紧急、待办、值得看、暂时略过；条数可选 1–200，默认 50。
+- **阅读**：紧凑预览、点开全文、低优先级折叠；飞书有定位链接时可跳回原消息。
+- **管理**：手动纠正、跨群待办、拖动排序、勾选完成与撤销。
+- **保存**：刷新保留已整理的信息；系统入群通知自动过滤。
+- **控制**：读取消息与调用模型分开，不自动回复或执行工作任务。
 
-**扫码链接的约 10 分钟有效期，不等于登录只能使用 10 分钟。** `offline_access` 允许 CLI 在刷新凭证有效时续期；实际过期时间由飞书决定，不能在本项目任意设成 3 天或 7 天。检查本机状态：
+## 为什么用 Jev
 
-```bash
-npx lark-cli auth status --json --verify
-```
+这一步需要的是几个判断：**跟我有关吗？需要我行动吗？紧急吗？有参考价值吗？**
 
-完成后回到页面：
+Jev 返回这些判断的概率，代码将结果放进四列。不需要先生成一段长回复，再从回复里解析分类。最终如何处理，由你决定。
 
-1. 「设置」→「检查飞书连接」。
-2. 选择「飞书消息」，搜索并选群。
-3. 填写群里使用的姓名和你的职责。
-4. 选择条数：默认 **50**，可选 **1–200**；看板按所选条数显示；点击「分类」会先按该数量重新拉取消息，无需额外刷新。
-5. 点击「分类」，核对待发送内容，确认后交给 Jev。
-6. 点「加入待办」保存到跨群队列，拖动把手排序（也支持上下按钮）。点群名搜索其他群或打开已保存群；四栏只显示当前群，队列保留各群待办。
+概率不是正确率保证，默认阈值还需在自己的消息上检验。[数据存储、分批上下文与使用限制](docs/USAGE.md)。
 
-拉取和分类是两个独立操作；不会一登录就读取全部聊天，也不会拉取后自动上传模型。
+## 扩展与贡献
 
-## 接上企业微信
+消息接入与分类逻辑分开实现。欢迎修复问题，或贡献钉钉、Slack 等新来源的适配器。
 
-在「设置 → 企业微信智能机器人」填写 Bot ID / 长连接 Secret。认证成功后，私聊机器人或在群里 @机器人发消息，再选择「企业微信消息」查看已接收的会话。首次搜索可留空。
-
-这是机器人消息入口，不是任意群聊全量读取。无需公网回调，暂不支持企业会话存档。详见 [配置与读取范围](docs/WECOM.md)。
-
-## 待分类消息也能直接处理
-
-展开待分类列表，可人工选择四类，或直接「加入待办」（自动归到我的待办）。不调用 Jev，不消耗模型额度。
-
-有官方 `message_app_link` 的飞书消息显示「在飞书打开」，待办队列和详情也保留入口；历史缓存需刷新消息获取链接。未返回链接时明确提示，不编造定位地址。客户端需已登录且拥有原会话访问权限。
-
-## 一次分类是怎么发生的
+[贡献指南](CONTRIBUTING.md) · [接入扩展指南](docs/EXTENDING.md) · [反馈问题](https://github.com/Adkid-Zephyr/work-with-jev/issues/new/choose) · [复制为自己的项目](https://github.com/Adkid-Zephyr/work-with-jev/generate)
 
 ```text
-飞书近期消息 + 我是谁 / 我负责什么
-                 ↓
-        Jev 并行回答四种判断
-  与我相关？需要行动？迫切？有参考价值？
-                 ↓
-        代码根据概率分到四列
-                 ↓
-          我确认、纠正、勾选
+work-with-jev/
+├── dist/                 中文交互界面
+├── lib/core.mjs          消息处理与分类规则
+├── lib/providers/        飞书、企业微信与扩展模板
+├── server.mjs            本地服务与 Jev 调用
+├── tests/                离线回归测试
+└── docs/                 接入指南与评测记录
 ```
 
-Jev 返回判断信号，程序控制分类规则。完成与手动纠正不交给模型决定。详情里可查看真实概率；中间概率会标为“待确认”。
+开发检查：`npm run check`、`npm test`。已有[浏览器交互评测](docs/qa/REVIEW.md)与[维护续接记录](docs/qa/SESSION.md)；离线测试不等于真实平台或模型验证。
 
-## 现在支持什么
+## 致谢与 License
 
-- **可用**：内置中文示例、飞书用户身份读群、企业微信智能机器人长连接、Jev 分类、勾选/撤销、手动纠正、刷新后保留状态。
-- **可扩展**：消息来源适配器已独立，提供 [接入指南](docs/EXTENDING.md) 和 [模板](lib/providers/example.mjs)。
-- **尚未接入**：企业微信会话存档、钉钉、Slack 等。企业微信机器人交互和会话内容存档的读取范围不同，不能把发消息 Webhook 当作任意群聊读取接口。
+基于 [TypeSafe / Jev](https://docs.typesafe.ai/introduction)、[飞书 CLI](https://github.com/larksuite/cli) 和 [企业微信 SDK](https://github.com/WecomTeam/aibot-node-sdk)。演示叙事参考 [Jev Ultrafast](https://github.com/browser-use/jev-ultrafast)，未复用其代码或速度数据。
 
-## 数据与限制
+<a href="https://docs.typesafe.ai/introduction"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/typesafe-dark.png"><img src="docs/assets/typesafe-light.png" alt="TypeSafe AI" width="120"></picture></a>
 
-<details>
-<summary>存储、权限与模型边界</summary>
-
-
-- 本机服务只监听 `127.0.0.1`，不提供公网托管或多用户隔离。
-- 原文、分类、勾选与跨群队列顺序保存在当前浏览器 localStorage；清除站点数据会清除这些记录。固定使用同一浏览器和地址。
-- 页面填写的 Jev 密钥只在服务内存保存，重启需重新填写。需要持久配置时，将 `.env.example` 复制为 `.env`，填写 `TYPESAFE_API_KEY`。不要提交 `.env`。
-- 只有确认分类时，选定消息及身份描述才发送给 TypeSafe API，会消耗你的额度。飞书凭证由官方 CLI 管理。
-- 企微收到的消息最多缓存 1,000 条在本机 `.data/wecom-inbox.json`；时间为本机接收时间。支持文字和回调自带的语音转写，不下载附件。分页有上限，不承诺包含完整历史或全部话题回复。
-- 每次选定最多 200 条，模型请求分为最多 20 条、约 20,000 正文字符的小批。不同批次不共享上下文；已完成批次会在后续失败时保留。
-- 概率不是准确率保证。默认阈值尚未经你的业务数据校准；不自动回复、删消息或执行工作任务。取消/延期的重新判断不等于自动合并与关闭待办。
-- 这是演示与个人工具，尚无公开的端到端速度/准确率基准。离线自动测试不等于真实平台或模型验证。
-
-</details>
-
-## 开源与参与
-
-应用代码采用 [MIT 开源许可证](LICENSE)，允许使用、修改、再分发及商用，需遵守许可证条款。Jev 是外部 TypeSafe 服务，模型权重与服务本身不包含在本仓库中；第三方 Logo 保留原有归属。
-
-[贡献指南](CONTRIBUTING.md) · [反馈问题](https://github.com/Adkid-Zephyr/work-with-jev/issues/new/choose) · [复制为自己的项目](https://github.com/Adkid-Zephyr/work-with-jev/generate)
-
-## 开发
-
-```bash
-npm run check
-npm test
-```
-
-```text
-dist/                 中文界面
-lib/core.mjs          消息归一化、去重、问题与分类规则
-lib/providers/        只读消息来源适配器
-server.mjs            本机 API、凭证隔离、模型调用
-tests/                离线回归测试
-```
-
-测试不需要平台凭证，不发送真实消息或调用付费模型。
-
-交互验证与证据边界：[评测记录](docs/qa/REVIEW.md) · [维护续接入口](docs/qa/SESSION.md)。
-
-## 演示与致谢
-
-展示方式受 [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast) 启发：用一个具体任务，展示实际执行和结果。这里的故事是 **消息进来 → 分成四类 → 勾掉已完成**。未复用其代码或速度数据，也不声称具有相同性能。
-
-依赖 [TypeSafe / Jev](https://docs.typesafe.ai/introduction) 和 [飞书 CLI](https://github.com/larksuite/cli)。本项目不是这些服务的官方产品。
-
-[MIT License](LICENSE) · [素材来源与品牌归属](docs/assets/ATTRIBUTION.md)
+应用代码采用 [MIT](LICENSE)，允许按条款使用、修改和商用。Jev 模型与 API 是外部服务，不包含在开源范围内。本项目独立开发，不代表官方背书；[Logo 来源与归属](docs/assets/ATTRIBUTION.md)。
