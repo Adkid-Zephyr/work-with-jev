@@ -21,36 +21,51 @@ const examples=[
 const storageKey='jev-inbox-v1';let persisted={};try{persisted=JSON.parse(localStorage.getItem(storageKey)||'{}')}catch{}
 let source=persisted.source||'demo',person=persisted.person||'wang',viewer=persisted.viewer||{name:'',role:'',openId:''},chat=persisted.chat||null,stores=persisted.stores||{},view='open',nonce='',hasKey=false,busy=false,toastTimer,proposal=null,lastRun='';
 let messageCount=Number.isInteger(persisted.messageCount)&&persisted.messageCount>=1&&persisted.messageCount<=200?persisted.messageCount:50;
+let queues=persisted.queues||{},draggedTask=null;
 const viewerKey=()=>source==='demo'?person:JSON.stringify(viewer);
 const key=()=>source+'|'+viewerKey();
 function demoRows(){let idx=['wang','li','chen'].indexOf(person)+3;return examples.map((x,i)=>({id:'demo-'+i,text:x[2],sender:x[0],time:new Date('2026-09-20T'+x[1]+':00+08:00').getTime(),group:'周五上线项目组',chatId:'demo-launch',source:'demo',supported:true,category:x[idx],status:'open',starred:false,result:{origin:'preset',review:false}}));}
 function rows(){if(!stores[key()])stores[key()]=source==='demo'?demoRows():[];return stores[key()];}
-function save(){try{localStorage.setItem(storageKey,JSON.stringify({source,person,viewer,chat,stores,messageCount}));}catch{notice('浏览器存储空间不足，本次改动可能无法在刷新后保留。');}}
+function save(){try{localStorage.setItem(storageKey,JSON.stringify({source,person,viewer,chat,stores,messageCount,queues}));}catch{notice('浏览器存储空间不足，本次改动可能无法在刷新后保留。');}}
 function notice(s){$('#notice').textContent=s;$('#notice').classList.toggle('hidden',!s)}
 function toast(s){$('#toast').textContent=s;$('#toast').classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.add('hidden'),3000)}
 async function api(path,b={}){const r=await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json','X-Demo-Token':nonce},body:JSON.stringify(b)});const d=await r.json();if(!r.ok)throw new Error(d.error||'请求失败');return d;}
 async function task(fn){if(busy)return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);notice('');try{await fn()}catch(e){notice(e.message);toast(e.message)}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);render()}}
 function currentViewer(){return source==='demo'?people[person]:viewer;}
 function render(){
- const all=rows(),current=currentViewer();
+ const all=rows().filter(m=>source==='demo'||m.chatId===chat?.id),current=currentViewer();
  $('#messageCount').value=messageCount;
  // Earlier builds had a deferred list. Bring it back into the single board.
  for(const m of all) if(m.status==='later')m.status='open';
  $('#identityText').textContent=current.name?`我是${current.name}`:'设置我的身份';
  $('#sourceSelect').value=source;
  $('#pullBtn').classList.toggle('hidden',source!=='feishu');$('#resetBtn').classList.toggle('hidden',source!=='demo');
- $('#sourceName').textContent=source==='demo'?'':chat?.name||'';
+ $('#sourceName').textContent=chat?.name?chat.name+' ⌄':'选择群聊';$('#sourceName').classList.toggle('hidden',source==='demo');
  $('#modeLabel').textContent=source==='demo'?(all.some(m=>m.result?.origin==='jev')?'示例 · Jev 实测':'示例 · 预设分类'):'飞书 · '+all.length+' 条消息';
  $('#classifyBtn').textContent=busy?'分类中…':'分类';
  const pending=all.filter(m=>!m.category);$('#pending').classList.toggle('hidden',!pending.length);
  $('#pending').innerHTML=`<details><summary>${pending.length} 条待分类消息</summary>${pending.map(m=>`<p>${esc(m.sender)}：${esc(m.text)}${!m.supported?'（附件待确认）':''}</p>`).join('')}</details>`;
  $('#board').innerHTML=Object.entries(CATS).map(([cat,c])=>{const list=all.filter(x=>x.category===cat);return `<section class="column ${cat}"><h2 class="column-title">${c.name}<span>${list.filter(x=>x.status!=='done').length}</span></h2>${list.map(card).join('')||'<div class="empty">暂无消息</div>'}</section>`}).join('');
  $('#keyStatus').textContent=hasKey?'· 已配置':'· 未配置';
+ renderQueue();
  $('#evidence').textContent=lastRun;$('#evidence').classList.toggle('hidden',!lastRun);save();
 }
-function card(m){const t=new Date(m.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Shanghai'});return `<article class="card ${m.status==='done'?'done-card':''}" data-id="${esc(m.id)}"><input class="complete-check" type="checkbox" data-action="complete" aria-label="完成：${esc(m.text.slice(0,30))}" ${m.status==='done'?'checked':''}><button class="card-detail" data-action="detail" aria-label="查看消息原文"><div class="card-meta">${esc(m.sender)}<time>${t}</time></div><p class="card-text">${esc(m.text)}</p>${m.result?.review?'<span class="review">待确认</span>':''}</button></article>`;}
-$('#board').addEventListener('click',e=>{const b=e.target.closest('button[data-action="detail"]');if(!b||busy)return;const m=rows().find(m=>m.id===b.closest('[data-id]').dataset.id);if(m)showDetail(m)});
-$('#board').addEventListener('change',e=>{if(e.target.dataset.action!=='complete')return;const m=rows().find(m=>m.id===e.target.closest('[data-id]').dataset.id);if(!m)return;m.status=e.target.checked?'done':'open';render();});
+function card(m){const t=new Date(m.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Shanghai'});return `<article class="card ${m.status==='done'?'done-card':''}" data-id="${esc(m.id)}"><input class="complete-check" type="checkbox" data-action="complete" aria-label="完成：${esc(m.text.slice(0,30))}" ${m.status==='done'?'checked':''}><button class="card-detail" data-action="detail" aria-label="查看消息原文"><div class="card-meta">${esc(m.sender)}<time>${t}</time></div><p class="card-text">${esc(m.text)}</p>${m.result?.review?'<span class="review">待确认</span>':''}</button><button class="queue-add" data-action="enqueue" ${queue().some(t=>t.message.id===m.id&&t.message.chatId===m.chatId)?'disabled':''}>${queue().some(t=>t.message.id===m.id&&t.message.chatId===m.chatId)?'已加入待办':'+ 加入待办'}</button></article>`;}
+$('#board').addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b||busy)return;const m=rows().find(m=>m.id===b.closest('[data-id]').dataset.id);if(!m)return;if(b.dataset.action==='enqueue'){enqueue(m);return}showDetail(m)});
+$('#board').addEventListener('change',e=>{if(e.target.dataset.action!=='complete')return;const m=rows().find(m=>m.id===e.target.closest('[data-id]').dataset.id);if(!m)return;m.status=e.target.checked?'done':'open';for(const t of queue())if(t.message.id===m.id&&t.message.chatId===m.chatId)t.status=m.status;render();});
+function queue(){return queues[key()]??(queues[key()]=[])}
+function enqueue(m){if(queue().some(t=>t.message.id===m.id&&t.message.chatId===m.chatId))return;queue().push({id:JSON.stringify([m.chatId,m.id]),message:structuredClone(m),status:m.status==='done'?'done':'open'});render();toast('已加入跨群待办');}
+function renderQueue(){
+ $('#queueCount').textContent=queue().filter(t=>t.status!=='done').length;
+ $('#queueList').innerHTML=queue().map((t,i)=>`<div class="queue-item ${t.status==='done'?'queue-done':''}" data-task="${esc(t.id)}"><button class="drag-handle" draggable="true" aria-label="拖动待办排序；也可使用上下按钮">⠿</button><input type="checkbox" data-queue-action="complete" aria-label="完成待办" ${t.status==='done'?'checked':''}><div class="queue-content"><p>${esc(t.message.text)}</p><small>${esc(t.message.group)} · ${esc(t.message.sender)}</small></div><div class="queue-controls"><button data-queue-action="up" aria-label="上移待办" ${i===0?'disabled':''}>↑</button><button data-queue-action="down" aria-label="下移待办" ${i===queue().length-1?'disabled':''}>↓</button><button data-queue-action="remove" aria-label="移出待办">×</button></div></div>`).join('')||'<p class="queue-empty">将消息加入待办，切换群聊后仍保留。</p>';
+}
+function moveTask(id,to){const list=queue(),from=list.findIndex(t=>t.id===id);if(from<0||to<0||to>=list.length)return;const [item]=list.splice(from,1);list.splice(to,0,item);render()}
+$('#queueList').addEventListener('change',e=>{if(e.target.dataset.queueAction!=='complete')return;const t=queue().find(t=>t.id===e.target.closest('[data-task]').dataset.task);if(!t)return;t.status=e.target.checked?'done':'open';const m=rows().find(m=>m.id===t.message.id&&m.chatId===t.message.chatId);if(m)m.status=t.status;render()});
+$('#queueList').addEventListener('click',e=>{const b=e.target.closest('button[data-queue-action]');if(!b)return;const id=b.closest('[data-task]').dataset.task,i=queue().findIndex(t=>t.id===id);if(i<0)return;if(b.dataset.queueAction==='remove'){const [removed]=queue().splice(i,1);render();toast('已移出待办，原消息保留');return}moveTask(id,i+(b.dataset.queueAction==='up'?-1:1))});
+$('#queueList').addEventListener('dragstart',e=>{const handle=e.target.closest('.drag-handle');if(!handle)return;draggedTask=handle.closest('[data-task]').dataset.task;e.dataTransfer.setData('text/plain',draggedTask);e.dataTransfer.effectAllowed='move'});
+$('#queueList').addEventListener('dragover',e=>{if(draggedTask){e.preventDefault();e.dataTransfer.dropEffect='move'}});
+$('#queueList').addEventListener('drop',e=>{if(!draggedTask)return;e.preventDefault();const target=e.target.closest('[data-task]');const to=target?queue().findIndex(t=>t.id===target.dataset.task):queue().length-1;moveTask(draggedTask,to);draggedTask=null});
+$('#queueList').addEventListener('dragend',()=>{draggedTask=null});
 function showDetail(m){const signals=m.result?.signals;const context=rows().filter(x=>x.chatId===m.chatId&&x.id!==m.id).sort((a,b)=>Math.abs(a.time-m.time)-Math.abs(b.time-m.time)).slice(0,4).sort((a,b)=>a.time-b.time);$('#detailBody').innerHTML=`<p>${esc(m.sender)} · ${esc(m.group)} · ${new Date(m.time).toLocaleString('zh-CN')}</p><div class="detail-original">${esc(m.text)}</div><label>分类<select id="detailCategory">${Object.entries(CATS).map(([k,c])=>`<option value="${k}" ${k===m.category?'selected':''}>${c.name}</option>`).join('')}</select></label>${signals?'<h3>Jev 判断信号</h3>'+Object.entries(signals).map(([k,v])=>`<div class="signal-row"><span>${{related:'与我相关',action:'需要我行动',urgent:'迫切需要处理',value:'有参考价值'}[k]}</span><b>${Math.round(v*100)}%</b></div>`).join('')+'<p>概率不是正确率保证；当前分类阈值尚未经过业务数据校准。</p>':'<p>这是预设演示结果，没有虚构模型概率。</p>'}<h3>附近的群消息</h3>${context.map(x=>`<div class="context-item"><b>${esc(x.sender)}</b><br>${esc(x.text)}</div>`).join('')}<p>以上为本次已加载的附近消息，不代表完整会话。</p>`;$('#detailCategory').onchange=e=>{m.category=e.target.value;m.manual=true;render()};$('#detailDialog').showModal();}
 
 for(const b of document.querySelectorAll('[data-close]'))b.onclick=()=>b.closest('dialog').close();
@@ -58,11 +73,23 @@ for(const d of document.querySelectorAll('dialog'))d.addEventListener('click',e=
 $('#settingsBtn').onclick=()=>$('#settingsDialog').showModal();
 $('#saveKey').onclick=()=>task(async()=>{const d=await api('key',{key:$('#keyInput').value});hasKey=d.hasKey;$('#keyInput').value='';toast(hasKey?'密钥已保存在本机服务内存':'已清除密钥')});
 $('#checkFeishu').onclick=()=>task(async()=>{try{const d=await api('feishu/status');$('#feishuStatus').textContent=d.connected?`已连接：${d.name||'飞书用户'}`:`登录状态：${d.status}`;if(d.name&&!viewer.name)viewer.name=d.name;if(d.openId)viewer.openId=d.openId;}catch(e){$('#feishuStatus').textContent=e.message;throw e}});
-$('#sourceSelect').onchange=()=>{if($('#sourceSelect').value==='demo'){source='demo';lastRun='';notice('');render()}else{$('#sourceDialog').showModal();$('#sourceSelect').value=source}};
+$('#sourceSelect').onchange=()=>{if($('#sourceSelect').value==='demo'){source='demo';lastRun='';notice('');render()}else{openChats();$('#sourceSelect').value=source}};
 $('#searchChats').onclick=()=>task(async()=>{const d=await api('feishu/search',{query:$('#chatQuery').value});$('#chatResults').innerHTML=d.chats.map((c,i)=>`<button class="chat-option" data-index="${i}"><span>${esc(c.name)}</span><span>选择并拉取 →</span></button>`).join('')||'<p>没有找到匹配的群。请换一个关键词，或确认当前账号可访问该群。</p>';$('#chatResults').onclick=e=>{const b=e.target.closest('[data-index]');if(b)selectChat(d.chats[Number(b.dataset.index)])};});
 $('#chatQuery').onkeydown=e=>{if(e.key==='Enter')$('#searchChats').click()};
-async function selectChat(c){await task(async()=>{const d=await api('feishu/messages',{chat:c,count:messageCount});chat=c;source='feishu';view='open';stores[key()]=mergeMessages(rows(),d.messages);lastRun=`本次拉取 ${d.messages.length} 条消息${d.hasMore?'，还有更早消息未加载':''}。尚未发送给 Jev。`;$('#sourceDialog').close();toast('消息已拉取，先确认身份，再开始分类');if(!viewer.name)openIdentity()});}
-$('#pullBtn').onclick=()=>{if(chat)selectChat(chat);else $('#sourceDialog').showModal()};
+function openChats(){
+ const stored=stores['feishu|'+JSON.stringify(viewer)]||[];
+ const chats=[...new Map(stored.map(m=>[m.chatId,{id:m.chatId,name:m.group}])).values()];
+ $('#recentChats').innerHTML=chats.length?'<p>已整理的群聊</p>'+chats.map((c,i)=>`<button class="chat-option" data-recent="${i}"><span>${esc(c.name)}</span><span>打开已保存 →</span></button>`).join(''):'';
+ $('#recentChats').onclick=e=>{const b=e.target.closest('[data-recent]');if(b)selectChat(chats[Number(b.dataset.recent)])};
+ $('#sourceDialog').showModal();$('#chatQuery').focus();
+}
+$('#sourceName').onclick=openChats;
+async function selectChat(c,refresh=false){await task(async()=>{
+ const targetKey='feishu|'+JSON.stringify(viewer),cached=(stores[targetKey]||[]).some(m=>m.chatId===c.id);
+ if(!refresh&&cached){chat=c;source='feishu';lastRun='';$('#sourceDialog').close();return;}
+ const d=await api('feishu/messages',{chat:c,count:messageCount});chat=c;source='feishu';view='open';stores[key()]=mergeMessages(rows(),d.messages);lastRun=`本次拉取 ${d.messages.length} 条消息${d.hasMore?'，还有更早消息未加载':''}。尚未发送给 Jev。`;$('#sourceDialog').close();toast('消息已拉取');if(!viewer.name)openIdentity()
+});}
+$('#pullBtn').onclick=()=>{if(chat)selectChat(chat,true);else openChats()};
 function openIdentity(){const v=currentViewer();$('#viewerName').value=v.name;$('#viewerRole').value=v.role;$('#demoIdentities').classList.toggle('hidden',source!=='demo');$('#viewerName').disabled=source==='demo';$('#viewerRole').disabled=source==='demo';$('#saveIdentity').classList.toggle('hidden',source==='demo');$('#identityDialog').showModal()}
 $('#identityBtn').onclick=openIdentity;
 $('#demoIdentities').onclick=e=>{const p=e.target.closest('[data-person]')?.dataset.person;if(p){person=p;lastRun='';$('#identityDialog').close();render();toast('已切换身份：'+people[p].name)}};

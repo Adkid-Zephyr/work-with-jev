@@ -4,7 +4,7 @@
 
 [简体中文](README.md) · English
 
-Choose a Feishu chat and describe your role. Jev helps sort messages into **urgent**, **my tasks**, **worth reading**, and **skip for now**. Check off what you finish.
+Choose a Feishu chat and describe your role. Jev helps sort messages into **urgent**, **my tasks**, **worth reading**, and **skip for now**. Check off what you finish. Click the chat name to search or switch chats. Add messages to a persistent cross-chat task queue and drag to reorder; switching chats preserves your previous work.
 
 | Urgent | My tasks | Worth reading | Skip for now |
 | --- | --- | --- | --- |
@@ -76,7 +76,7 @@ Probabilities are available in message details; ambiguous signals are marked for
 ## Data and limits
 
 - Binds to `127.0.0.1` only. Not a hosted multi-user service.
-- Message text, categories, and completion live in browser localStorage. Clearing site data removes them. Use the same browser and URL.
+- Message text, categories, completion, and cross-chat task order live in browser localStorage. Clearing site data removes them. Use the same browser and URL.
 - Keys entered in the UI remain in server memory and must be entered again after a restart. For persistent local configuration, copy `.env.example` to `.env` and set `TYPESAFE_API_KEY`. Never commit credentials.
 - Confirmed classification sends selected messages and identity context to TypeSafe and uses your API credit. Feishu credentials are managed by its CLI.
 - Text and rich-text messages only. No attachment downloads, OCR, or transcription. Bounded pagination does not guarantee full history or complete thread replies.

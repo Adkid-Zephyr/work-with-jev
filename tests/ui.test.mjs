@@ -56,3 +56,27 @@ test('条数默认50、保存选择、拒绝越界；预览按指定条数截取
  input.value='201';input.dispatchEvent(new w.Event('change'));assert.equal(input.value,'5');
  fresh.dom.window.close();dom.window.close();
 });
+
+test('跨群保存：切群隔离看板，待办去重、拖动、完成同步与刷新恢复',async()=>{
+ const viewer={name:'测试用户',role:'运营',openId:'test-user'};const k='feishu|'+JSON.stringify(viewer);
+ const message=(id,chatId,group)=>({id,chatId,group,text:id+' 工作内容',sender:'同事',time:1000,category:'todo',status:'open',supported:true,source:'feishu'});
+ const saved=JSON.stringify({source:'feishu',viewer,chat:{id:'oc_a',name:'A 群'},stores:{[k]:[message('a1','oc_a','A 群'),message('a2','oc_a','A 群'),message('b1','oc_b','B 群')]}});
+ const {dom,w,doc}=await boot(saved);
+ assert.equal(doc.querySelectorAll('.card').length,2);
+ doc.querySelector('[data-id="a1"] [data-action="enqueue"]').click();
+ doc.querySelector('[data-id="a1"] [data-action="enqueue"]').click();assert.equal(doc.querySelectorAll('.queue-item').length,1);
+ doc.querySelector('#sourceName').click();assert.equal(doc.querySelector('#sourceDialog').open,true);assert.equal(doc.querySelectorAll('[data-recent]').length,2);
+ doc.querySelector('[data-recent="1"]').click();await new Promise(r=>setImmediate(r));
+ assert.equal(doc.querySelectorAll('.card').length,1);assert.ok(doc.querySelector('[data-id="b1"]'));assert.equal(doc.querySelectorAll('.queue-item').length,1);
+ doc.querySelector('[data-id="b1"] [data-action="enqueue"]').click();assert.equal(doc.querySelectorAll('.queue-item').length,2);
+ const tasks=doc.querySelectorAll('.queue-item');const dataTransfer={setData(){},effectAllowed:'',dropEffect:''};
+ const start=new w.Event('dragstart',{bubbles:true});Object.defineProperty(start,'dataTransfer',{value:dataTransfer});tasks[1].querySelector('.drag-handle').dispatchEvent(start);
+ const drop=new w.Event('drop',{bubbles:true,cancelable:true});Object.defineProperty(drop,'dataTransfer',{value:dataTransfer});tasks[0].dispatchEvent(drop);
+ assert.match(doc.querySelector('.queue-item').textContent,/b1 工作内容/);
+ doc.querySelector('.queue-item input').click();assert.ok(doc.querySelector('[data-id="b1"].done-card'));
+ doc.querySelector('#sourceName').click();doc.querySelector('[data-recent="0"]').click();await new Promise(r=>setImmediate(r));
+ assert.equal(doc.querySelectorAll('.card').length,2);assert.equal(doc.querySelectorAll('.queue-item').length,2);
+ const fresh=await boot(w.localStorage.getItem('jev-inbox-v1'));assert.match(fresh.doc.querySelector('.queue-item').textContent,/b1 工作内容/);assert.ok(fresh.doc.querySelector('.queue-item input').checked);assert.equal(fresh.doc.querySelectorAll('.card').length,2);
+ fresh.doc.querySelector('[data-queue-action="remove"]').click();assert.equal(fresh.doc.querySelectorAll('.queue-item').length,1);assert.equal(JSON.parse(fresh.w.localStorage.getItem('jev-inbox-v1')).stores[k].length,3);
+ fresh.dom.window.close();dom.window.close();
+});
