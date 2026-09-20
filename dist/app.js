@@ -1,4 +1,4 @@
-import {mergeMessages,safeMessageLink} from '/core.mjs';
+import {mergeMessages,safeMessageLink,isSystemNotice} from '/core.mjs';
 const $=s=>document.querySelector(s);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const CATS={urgent:{name:'紧急处理',desc:'需要你尽快回复或行动',icon:'ϟ'},todo:{name:'我的待办',desc:'与你相关，安排时间完成',icon:'☑'},valuable:{name:'值得一看',desc:'有用的分享与重要进展',icon:'◇'},noise:{name:'暂时略过',desc:'不占用此刻的注意力',icon:'☷'}};
 const people={wang:{name:'小王',role:'内容运营，负责新品上线的脚本、发布文案和活动协调'},li:{name:'小李',role:'设计师，负责新品封面、视觉素材与视频剪辑'},chen:{name:'小陈',role:'开发工程师，负责官网、上线发布和接口排查'}};
@@ -32,7 +32,7 @@ function toast(s){$('#toast').textContent=s;$('#toast').classList.remove('hidden
 async function api(path,b={}){const r=await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json','X-Demo-Token':nonce},body:JSON.stringify(b)});const d=await r.json();if(!r.ok)throw new Error(d.error||'请求失败');return d;}
 async function task(fn){if(busy)return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);notice('');try{await fn()}catch(e){notice(e.message);toast(e.message)}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);render()}}
 function currentViewer(){return source==='demo'?people[person]:viewer;}
-function visibleMessages(){return rows().filter(m=>source==='demo'||m.chatId===chat?.id).sort((a,b)=>a.time-b.time).slice(-messageCount)}
+function visibleMessages(){return rows().filter(m=>!isSystemNotice(m)&&(source==='demo'||m.chatId===chat?.id)).sort((a,b)=>a.time-b.time).slice(-messageCount)}
 function render(){
  const all=visibleMessages(),current=currentViewer();
  $('#messageCount').value=messageCount;
@@ -116,7 +116,7 @@ $('#classifyBtn').onclick=()=>task(async()=>{
  }else prepareClassification(visibleMessages(),visibleMessages().length);
 });
 function prepareClassification(messages,fetched){
- const all=messages.filter(m=>m.supported!==false);
+ const all=messages.filter(m=>!isSystemNotice(m)&&m.supported!==false);
  if(!all.length){toast('当前范围内没有可分类的文字消息');return}
  proposal={messages:structuredClone(all),viewer:structuredClone(currentViewer()),storeKey:key()};
  $('#consentText').textContent=`目标 ${messageCount} 条，本次取得 ${fetched} 条，其中 ${all.length} 条文字消息将分类；身份：${proposal.viewer.name}。手动分类和完成状态保留。`;

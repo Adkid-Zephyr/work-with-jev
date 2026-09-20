@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import {JSDOM} from 'jsdom';
-import {mergeMessages,safeMessageLink} from '../lib/core.mjs';
+import {mergeMessages,safeMessageLink,isSystemNotice} from '../lib/core.mjs';
 const html=await readFile(new URL('../dist/index.html',import.meta.url),'utf8');
-const app=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace("import {mergeMessages,safeMessageLink} from '/core.mjs';",'');
+const app=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace("import {mergeMessages,safeMessageLink,isSystemNotice} from '/core.mjs';",'');
 async function boot(saved,hasKey=false){
  const dom=new JSDOM(html,{url:'http://127.0.0.1:4173',runScripts:'outside-only'}),w=dom.window;
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
- w.mergeMessages=mergeMessages;w.safeMessageLink=safeMessageLink;w.structuredClone=structuredClone;w.confirm=()=>true;w.fetch=async()=>({json:async()=>({nonce:'test',hasKey})});
+ w.mergeMessages=mergeMessages;w.safeMessageLink=safeMessageLink;w.isSystemNotice=isSystemNotice;w.structuredClone=structuredClone;w.confirm=()=>true;w.fetch=async()=>({json:async()=>({nonce:'test',hasKey})});
  if(saved)w.localStorage.setItem('jev-inbox-v1',saved);
  await new vm.Script('(async()=>{'+app+'})()').runInContext(dom.getInternalVMContext());
  return {dom,w,doc:w.document};
