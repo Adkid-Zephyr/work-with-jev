@@ -12,4 +12,6 @@ TypeSafe's names and logos belong to their respective owner. Included solely to 
 
 ## Workflow illustration
 
-`workflow.svg` is an original explanatory diagram for Work with Jev, under this repository's MIT license. It is not a screenshot, a measured model result, or an illustration of performance.
+`workflow.png` was AI-generated using OpenAI image generation for this project on 2026-09-20, then revised for a research-paper-style method overview. It replaces the earlier hand-authored SVG. This asset is included under this repository's MIT license.
+
+The figure illustrates the implemented flow: authorized message sources plus user context → Jev judgments → deterministic routing → user-selected cross-chat tasks. The dashed “New source” denotes an extension point, not an implemented integration. The figure is not a screenshot, benchmark, publication, conference endorsement, or live model result.

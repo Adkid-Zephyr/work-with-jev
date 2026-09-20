@@ -10,6 +10,8 @@
 
 ---
 
+![Work with Jev: messages, role-aware judgments, classification, and cross-chat tasks](docs/assets/workflow.png)
+
 ## What is this?
 
 Your work chats have hundreds of messages. Someone needs your approval, someone shared a useful guide, and dozens of people said “got it.” Reading everything costs time; ignoring everything risks missing your part.
