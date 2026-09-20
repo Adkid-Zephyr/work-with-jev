@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import {JSDOM} from 'jsdom';
-import {mergeMessages} from '../lib/core.mjs';
+import {mergeMessages,safeMessageLink} from '../lib/core.mjs';
 const html=await readFile(new URL('../dist/index.html',import.meta.url),'utf8');
-const app=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace("import {mergeMessages} from '/core.mjs';",'');
+const app=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace("import {mergeMessages,safeMessageLink} from '/core.mjs';",'');
 async function boot(saved,hasKey=false){
  const dom=new JSDOM(html,{url:'http://127.0.0.1:4173',runScripts:'outside-only'}),w=dom.window;
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
- w.mergeMessages=mergeMessages;w.structuredClone=structuredClone;w.confirm=()=>true;w.fetch=async()=>({json:async()=>({nonce:'test',hasKey})});
+ w.mergeMessages=mergeMessages;w.safeMessageLink=safeMessageLink;w.structuredClone=structuredClone;w.confirm=()=>true;w.fetch=async()=>({json:async()=>({nonce:'test',hasKey})});
  if(saved)w.localStorage.setItem('jev-inbox-v1',saved);
  await new vm.Script('(async()=>{'+app+'})()').runInContext(dom.getInternalVMContext());
  return {dom,w,doc:w.document};
@@ -93,4 +93,16 @@ test('修改条数更新看板，增加条数后分类会补拉，预览只用�
  assert.equal(count,75);assert.equal(doc.querySelectorAll('#consentPreview p').length,75);assert.equal(doc.querySelectorAll('.card').length,75);
  input.value='5';input.dispatchEvent(new w.Event('change'));assert.equal(doc.querySelectorAll('.card').length,5);assert.equal(JSON.parse(w.localStorage.getItem('jev-inbox-v1')).stores[k].length,75);
  dom.window.close();
+});
+
+test('待分类消息：官方链接、手动分类、直接加入待办，无需模型请求',async()=>{
+ const viewer={name:'测试',role:'运营'},k='feishu|'+JSON.stringify(viewer),link='https://applink.feishu.cn/client/chat/open?openChatId=oc_test&position=12';
+ const msg=(id,url)=>({id,chatId:'oc_test',group:'测试群',text:'待处理 '+id,sender:'成员',time:1000,category:null,status:'open',source:'feishu',supported:true,messageLink:url});
+ const {dom,w,doc}=await boot(JSON.stringify({source:'feishu',viewer,chat:{id:'oc_test',name:'测试群'},stores:{[k]:[msg('a',link),msg('b','javascript:alert(1)')]}}));
+ w.fetch=()=>{throw new Error('人工处理不得调用 API')};
+ assert.equal(doc.querySelector('#pending a').href,link);assert.equal(doc.querySelectorAll('#pending a').length,1);
+ const select=doc.querySelector('[data-id="a"] select');select.value='urgent';select.dispatchEvent(new w.Event('change',{bubbles:true}));assert.ok(doc.querySelector('.urgent [data-id="a"]'));
+ doc.querySelector('#pending [data-pending="enqueue"]').click();assert.ok(doc.querySelector('.todo [data-id="b"]'));assert.equal(doc.querySelectorAll('.queue-item').length,1);
+ const fresh=await boot(w.localStorage.getItem('jev-inbox-v1'));assert.equal(fresh.doc.querySelectorAll('.queue-item').length,1);assert.equal(fresh.doc.querySelectorAll('#pending .pending-item').length,0);
+ fresh.dom.window.close();dom.window.close();
 });

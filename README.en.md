@@ -52,6 +52,10 @@ Then check the connection in Settings, choose Feishu messages, search for a chat
 
 Fetching messages does not itself send them to Jev.
 
+## Handle unclassified messages
+
+Choose a category manually or add directly to the task queue (also assigns My tasks). These operations do not call Jev. Official message app links appear as Open in Feishu, including in task details and the queue. Refresh older cached messages to retrieve links; missing links are indicated rather than invented. The Feishu client must be signed in with access to the conversation.
+
 ## How it works
 
 ```text

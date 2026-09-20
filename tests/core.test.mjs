@@ -25,3 +25,8 @@ test('问题明确引用目标，模型状态不携带预设答案、完成标�
  assert.equal(Object.keys(req.questions).length,4);assert.match(req.questions.m0_action.instructions,/messages\[0\]/);
  const encoded=JSON.stringify(req);assert.ok(!encoded.includes('secret'));assert.ok(!encoded.includes('category'));assert.ok(!encoded.includes('"status"'));
 });
+
+test('保留官方消息定位链接，拒绝非官方或脚本链接',()=>{
+ const rows=normalizeMessages({messages:[{message_id:'a',msg_type:'text',content:'hi',message_app_link:'https://applink.feishu.cn/client/chat/open?openChatId=oc_test&position=5'},{message_id:'b',msg_type:'text',message_app_link:'https://evil.example/client/chat/open'}]},{id:'oc_test',name:'测试'});
+ assert.match(rows[0].messageLink,/position=5/);assert.equal(rows[1].messageLink,'');
+});
