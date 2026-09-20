@@ -106,3 +106,15 @@ test('待分类消息：官方链接、手动分类、直接加入待办，无�
  const fresh=await boot(w.localStorage.getItem('jev-inbox-v1'));assert.equal(fresh.doc.querySelectorAll('.queue-item').length,1);assert.equal(fresh.doc.querySelectorAll('#pending .pending-item').length,0);
  fresh.dom.window.close();dom.window.close();
 });
+
+test('低优先级默认折叠；同账号历史队列迁移并在修改职责后保留',async()=>{
+ const viewer={name:'测试',role:'新职责',openId:'same-account'},oldViewer={...viewer,role:'旧职责'};
+ const m={id:'m1',chatId:'oc_test',group:'测试群',text:'完整的待办内容',sender:'成员',time:1000,category:'todo',status:'open',source:'feishu'};
+ const q={id:JSON.stringify([m.chatId,m.id]),message:m,status:'open'};
+ const state={source:'feishu',viewer,chat:{id:'oc_test',name:'测试群'},stores:{['feishu|'+JSON.stringify(viewer)]:[m]},queues:{['feishu|'+JSON.stringify(oldViewer)]:[q],'feishu|{"name":"别人","openId":"other-account"}':[{...q,id:'other'}]}};
+ const {dom,w,doc}=await boot(JSON.stringify(state));assert.equal(doc.querySelector('#noiseDisclosure').open,false);assert.equal(doc.querySelectorAll('.queue-item').length,1);
+ doc.querySelector('.queue-text').click();assert.match(doc.querySelector('.detail-original').textContent,/完整的待办内容/);
+ doc.querySelector('#identityBtn').click();doc.querySelector('#viewerRole').value='再改一次职责';doc.querySelector('#saveIdentity').click();assert.equal(doc.querySelectorAll('.queue-item').length,1);
+ const saved=w.localStorage.getItem('jev-inbox-v1');const fresh=await boot(saved);assert.equal(fresh.doc.querySelectorAll('.queue-item').length,1);assert.equal(JSON.parse(saved).queues['queue|feishu|same-account'].length,1);
+ fresh.dom.window.close();dom.window.close();
+});
