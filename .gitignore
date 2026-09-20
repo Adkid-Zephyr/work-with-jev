@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.data/
+*.log
+.DS_Store
+.agents/
+.openai/
+AGENTS.md
+skills-lock.json
+coverage/
