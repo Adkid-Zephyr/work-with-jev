@@ -114,6 +114,12 @@ Probabilities are available in message details; ambiguous signals are marked for
 
 </details>
 
+## Open source & contributions
+
+The application code is open source under the [MIT License](LICENSE): you may use, modify, redistribute, and use it commercially subject to the license terms. Jev remains an external TypeSafe service; its model weights and service are not included. Third-party logos retain their original ownership.
+
+[Contributing guide](CONTRIBUTING.md) · [Report an issue](https://github.com/Adkid-Zephyr/work-with-jev/issues/new/choose) · [Use this template](https://github.com/Adkid-Zephyr/work-with-jev/generate)
+
 ## Development
 
 ```bash

@@ -128,6 +128,12 @@ Jev 返回判断信号，程序控制分类规则。完成与手动纠正不交�
 
 </details>
 
+## 开源与参与
+
+应用代码采用 [MIT 开源许可证](LICENSE)，允许使用、修改、再分发及商用，需遵守许可证条款。Jev 是外部 TypeSafe 服务，模型权重与服务本身不包含在本仓库中；第三方 Logo 保留原有归属。
+
+[贡献指南](CONTRIBUTING.md) · [反馈问题](https://github.com/Adkid-Zephyr/work-with-jev/issues/new/choose) · [复制为自己的项目](https://github.com/Adkid-Zephyr/work-with-jev/generate)
+
 ## 开发
 
 ```bash
