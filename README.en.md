@@ -1,8 +1,28 @@
-# Work with Jev
+<div align="center">
 
-**Too many work messages? Find the ones that need you.**
+<h1>Work with Jev</h1>
 
-[简体中文](README.md) · English
+<p><strong>Too many work messages? Find the ones that need you.</strong></p>
+
+<p><a href="README.md">简体中文</a> · <strong>English</strong></p>
+
+[![Checks](https://github.com/Adkid-Zephyr/work-with-jev/actions/workflows/test.yml/badge.svg)](https://github.com/Adkid-Zephyr/work-with-jev/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-334a6c.svg)](LICENSE)
+[![Node.js 22.9+](https://img.shields.io/badge/Node.js-22.9%2B-334a6c.svg)](https://nodejs.org/)
+
+<p><a href="#try-it-locally">Quick start</a> · <a href="#connect-feishu">Connect Feishu</a> · <a href="docs/EXTENDING.md">Add a provider</a></p>
+
+<a href="https://docs.typesafe.ai/introduction">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/typesafe-dark.png">
+  <img src="docs/assets/typesafe-light.png" alt="TypeSafe AI" width="150">
+</picture>
+</a>
+<p><sub>Built with Jev · Independent community project</sub></p>
+
+</div>
+
+![Work with Jev — workflow illustration](docs/assets/workflow.svg)
 
 Choose a Feishu chat and describe your role. Jev helps sort messages into **urgent**, **my tasks**, **worth reading**, and **skip for now**. Check off what you finish. Click the chat name to search or switch chats. Add messages to a persistent cross-chat task queue and drag to reorder; switching chats preserves your previous work.
 
@@ -79,6 +99,10 @@ Probabilities are available in message details; ambiguous signals are marked for
 
 ## Data and limits
 
+<details>
+<summary>Storage, permissions and model boundaries</summary>
+
+
 - Binds to `127.0.0.1` only. Not a hosted multi-user service.
 - Message text, categories, completion, and cross-chat task order live in browser localStorage. Clearing site data removes them. Use the same browser and URL.
 - Keys entered in the UI remain in server memory and must be entered again after a restart. For persistent local configuration, copy `.env.example` to `.env` and set `TYPESAFE_API_KEY`. Never commit credentials.
@@ -87,6 +111,8 @@ Probabilities are available in message details; ambiguous signals are marked for
 - Selections are split into requests of up to 20 messages and approximately 20,000 body characters. Batches do not share context. Completed batches survive a later failure.
 - Probabilities are not accuracy guarantees. Initial thresholds are not calibrated on your workload. The app does not reply, delete messages, execute tasks, or automatically merge/close tasks across updates.
 - No public end-to-end accuracy or speed benchmark is claimed. Offline tests do not validate live platform or model behavior.
+
+</details>
 
 ## Development
 
@@ -103,4 +129,4 @@ Inspired by [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultra
 
 Built on [TypeSafe / Jev](https://docs.typesafe.ai/introduction) and [Lark CLI](https://github.com/larksuite/cli). This is an independent project, not an official product of either service.
 
-[MIT License](LICENSE)
+[MIT License](LICENSE) · [Asset attribution](docs/assets/ATTRIBUTION.md)

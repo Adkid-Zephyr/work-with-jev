@@ -1,8 +1,28 @@
-# Work with Jev
+<div align="center">
 
-**工作群消息太多？把需要你处理的事挑出来。**
+<h1>Work with Jev</h1>
 
-简体中文 · [English](README.en.md)
+<p><strong>工作群消息太多？把需要你处理的事挑出来。</strong></p>
+
+<p><strong>简体中文</strong> · <a href="README.en.md">English</a></p>
+
+[![Checks](https://github.com/Adkid-Zephyr/work-with-jev/actions/workflows/test.yml/badge.svg)](https://github.com/Adkid-Zephyr/work-with-jev/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-334a6c.svg)](LICENSE)
+[![Node.js 22.9+](https://img.shields.io/badge/Node.js-22.9%2B-334a6c.svg)](https://nodejs.org/)
+
+<p><a href="#先试一下">快速上手</a> · <a href="#接上自己的飞书">连接飞书</a> · <a href="docs/EXTENDING.md">扩展接入</a></p>
+
+<a href="https://docs.typesafe.ai/introduction">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/typesafe-dark.png">
+  <img src="docs/assets/typesafe-light.png" alt="TypeSafe AI" width="150">
+</picture>
+</a>
+<p><sub>基于 Jev 构建 · 独立社区项目</sub></p>
+
+</div>
+
+![Work with Jev — workflow illustration](docs/assets/workflow.svg)
 
 选一个飞书群，告诉它你是谁。Jev 判断哪些需要马上处理、哪些是你的待办、哪些值得一看。做完一件，勾掉一件。点群名随时搜索切换；把消息加入跨群待办队列，拖动安排顺序，已整理的内容不会因切群消失。
 
@@ -93,6 +113,10 @@ Jev 返回判断信号，程序控制分类规则。完成与手动纠正不交�
 
 ## 数据与限制
 
+<details>
+<summary>存储、权限与模型边界</summary>
+
+
 - 本机服务只监听 `127.0.0.1`，不提供公网托管或多用户隔离。
 - 原文、分类、勾选与跨群队列顺序保存在当前浏览器 localStorage；清除站点数据会清除这些记录。固定使用同一浏览器和地址。
 - 页面填写的 Jev 密钥只在服务内存保存，重启需重新填写。需要持久配置时，将 `.env.example` 复制为 `.env`，填写 `TYPESAFE_API_KEY`。不要提交 `.env`。
@@ -101,6 +125,8 @@ Jev 返回判断信号，程序控制分类规则。完成与手动纠正不交�
 - 每次选定最多 200 条，模型请求分为最多 20 条、约 20,000 正文字符的小批。不同批次不共享上下文；已完成批次会在后续失败时保留。
 - 概率不是准确率保证。默认阈值尚未经你的业务数据校准；不自动回复、删消息或执行工作任务。取消/延期的重新判断不等于自动合并与关闭待办。
 - 这是演示与个人工具，尚无公开的端到端速度/准确率基准。离线自动测试不等于真实平台或模型验证。
+
+</details>
 
 ## 开发
 
@@ -125,4 +151,4 @@ tests/                离线回归测试
 
 依赖 [TypeSafe / Jev](https://docs.typesafe.ai/introduction) 和 [飞书 CLI](https://github.com/larksuite/cli)。本项目不是这些服务的官方产品。
 
-[MIT License](LICENSE)
+[MIT License](LICENSE) · [素材来源与品牌归属](docs/assets/ATTRIBUTION.md)
