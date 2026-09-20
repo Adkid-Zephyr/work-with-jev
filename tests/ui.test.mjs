@@ -118,3 +118,23 @@ test('低优先级默认折叠；同账号历史队列迁移并在修改职责�
  const saved=w.localStorage.getItem('jev-inbox-v1');const fresh=await boot(saved);assert.equal(fresh.doc.querySelectorAll('.queue-item').length,1);assert.equal(JSON.parse(saved).queues['queue|feishu|same-account'].length,1);
  fresh.dom.window.close();dom.window.close();
 });
+
+test('队列详情分类写回原消息与持久副本；键盘勾选保留焦点',async()=>{
+ const {dom,w,doc}=await boot();const id=doc.querySelector('.card').dataset.id;
+ doc.querySelector('.queue-add').click();doc.querySelector('.queue-text').click();
+ const select=doc.querySelector('#detailCategory');select.value='valuable';select.dispatchEvent(new w.Event('change',{bubbles:true}));
+ assert.ok(doc.querySelector(`.valuable [data-id="${id}"]`));
+ const state=JSON.parse(w.localStorage.getItem('jev-inbox-v1'));assert.equal(state.queues['queue|demo|wang'][0].message.category,'valuable');
+ doc.querySelector('#detailDialog').close();const check=doc.querySelector('.queue-item input');check.focus();check.click();
+ assert.equal(doc.activeElement,doc.querySelector('.queue-item input'));assert.ok(doc.activeElement.checked);
+ const fresh=await boot(w.localStorage.getItem('jev-inbox-v1'));assert.ok(fresh.doc.querySelector(`.valuable [data-id="${id}"].done-card`));fresh.dom.window.close();dom.window.close();
+});
+test('弹窗内显示错误；异步操作锁住可变输入并恢复原禁用状态',async()=>{
+ const {dom,w,doc}=await boot();doc.querySelector('#sourceDialog').showModal();
+ doc.querySelector('#searchChats').click();await new Promise(r=>setImmediate(r));
+ assert.match(doc.querySelector('#sourceDialog [role="alert"]').textContent,/请输入群名称关键词/);
+ let resolve;w.fetch=()=>new Promise(r=>resolve=r);doc.querySelector('#chatQuery').value='测试';doc.querySelector('#searchChats').click();
+ assert.ok(doc.querySelector('#messageCount').disabled);assert.ok(doc.querySelector('#sourceSelect').disabled);
+ resolve({ok:true,json:async()=>({chats:[]})});await new Promise(r=>setImmediate(r));
+ assert.ok(!doc.querySelector('#messageCount').disabled);assert.equal(doc.querySelector('.dialog-notice'),null);dom.window.close();
+});

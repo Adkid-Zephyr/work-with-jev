@@ -151,6 +151,8 @@ tests/                离线回归测试
 
 测试不需要平台凭证，不发送真实消息或调用付费模型。
 
+交互验证与证据边界：[评测记录](docs/qa/REVIEW.md) · [维护续接入口](docs/qa/SESSION.md)。
+
 ## 演示与致谢
 
 展示方式受 [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast) 启发：用一个具体任务，展示实际执行和结果。这里的故事是 **消息进来 → 分成四类 → 勾掉已完成**。未复用其代码或速度数据，也不声称具有相同性能。

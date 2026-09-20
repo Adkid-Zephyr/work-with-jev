@@ -129,6 +129,8 @@ npm test
 
 `dist/` contains the UI, `lib/core.mjs` the classification logic, `lib/providers/` the adapters, and `server.mjs` the local API. Tests use no credentials or paid model calls.
 
+Interaction checks and evidence boundaries: [review](docs/qa/REVIEW.md), [maintenance handoff](docs/qa/SESSION.md).
+
 ## Inspiration
 
 Inspired by [browser-use/jev-ultrafast](https://github.com/browser-use/jev-ultrafast): present a concrete task and show execution and results. Our demo story is **messages in → four categories → check off completed work**. No code or performance figures were copied from that project.
