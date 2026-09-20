@@ -32,8 +32,9 @@ function toast(s){$('#toast').textContent=s;$('#toast').classList.remove('hidden
 async function api(path,b={}){const r=await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json','X-Demo-Token':nonce},body:JSON.stringify(b)});const d=await r.json();if(!r.ok)throw new Error(d.error||'请求失败');return d;}
 async function task(fn){if(busy)return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);notice('');try{await fn()}catch(e){notice(e.message);toast(e.message)}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);render()}}
 function currentViewer(){return source==='demo'?people[person]:viewer;}
+function visibleMessages(){return rows().filter(m=>source==='demo'||m.chatId===chat?.id).sort((a,b)=>a.time-b.time).slice(-messageCount)}
 function render(){
- const all=rows().filter(m=>source==='demo'||m.chatId===chat?.id),current=currentViewer();
+ const all=visibleMessages(),current=currentViewer();
  $('#messageCount').value=messageCount;
  // Earlier builds had a deferred list. Bring it back into the single board.
  for(const m of all) if(m.status==='later')m.status='open';
@@ -41,7 +42,7 @@ function render(){
  $('#sourceSelect').value=source;
  $('#pullBtn').classList.toggle('hidden',source!=='feishu');$('#resetBtn').classList.toggle('hidden',source!=='demo');
  $('#sourceName').textContent=chat?.name?chat.name+' ⌄':'选择群聊';$('#sourceName').classList.toggle('hidden',source==='demo');
- $('#modeLabel').textContent=source==='demo'?(all.some(m=>m.result?.origin==='jev')?'示例 · Jev 实测':'示例 · 预设分类'):'飞书 · '+all.length+' 条消息';
+ $('#modeLabel').textContent=source==='demo'?(all.some(m=>m.result?.origin==='jev')?'示例 · Jev 实测':'示例 · 预设分类'):'飞书 · 当前 '+all.length+' / '+messageCount+' 条';
  $('#classifyBtn').textContent=busy?'分类中…':'分类';
  const pending=all.filter(m=>!m.category);$('#pending').classList.toggle('hidden',!pending.length);
  $('#pending').innerHTML=`<details><summary>${pending.length} 条待分类消息</summary>${pending.map(m=>`<p>${esc(m.sender)}：${esc(m.text)}${!m.supported?'（附件待确认）':''}</p>`).join('')}</details>`;
@@ -95,8 +96,29 @@ $('#identityBtn').onclick=openIdentity;
 $('#demoIdentities').onclick=e=>{const p=e.target.closest('[data-person]')?.dataset.person;if(p){person=p;lastRun='';$('#identityDialog').close();render();toast('已切换身份：'+people[p].name)}};
 $('#saveIdentity').onclick=()=>{const name=$('#viewerName').value.trim();if(!name){toast('请填写姓名');return}const raw=rows().map(m=>({...m,category:null,result:null,manual:false,status:'open',starred:false}));viewer={...viewer,name,role:$('#viewerRole').value.trim()};if(!stores[key()])stores[key()]=raw;$('#identityDialog').close();lastRun='';render();toast('身份已保存')};
 $('#resetBtn').onclick=()=>{if(confirm('重置示例分类与勾选？')){stores[key()]=demoRows();lastRun='';render();toast('演示已重置')}};
-$('#classifyBtn').onclick=()=>{if(!hasKey){$('#settingsDialog').showModal();toast('先填写 Jev API Key，即可运行真实分类');return}if(!currentViewer().name){openIdentity();return}const all=rows().filter(m=>m.supported!==false&&(source==='demo'||m.chatId===chat?.id)).sort((a,b)=>a.time-b.time).slice(-messageCount);if(!all.length){toast('还没有可分类的文字消息');return}proposal={messages:structuredClone(all),viewer:structuredClone(currentViewer()),storeKey:key()};$('#consentText').textContent=`本次发送 ${all.length} 条${source==='demo'?'内置示例':'飞书'}消息；身份：${proposal.viewer.name}。手动调整过的分类和完成状态会保留。`;$('#consentPreview').innerHTML=all.map(m=>`<p><b>${esc(m.sender)}</b> · ${esc(m.group)}<br>${esc(m.text)}</p>`).join('');$('#consentDialog').showModal()};
-$('#messageCount').onchange=()=>{const n=Number($('#messageCount').value);if(!Number.isInteger(n)||n<1||n>200){toast('请输入 1–200 的整数');$('#messageCount').value=messageCount;return}messageCount=n;save()};
+$('#classifyBtn').onclick=()=>task(async()=>{
+ if(!hasKey){$('#settingsDialog').showModal();toast('先填写 Jev API Key，即可运行真实分类');return}
+ if(!currentViewer().name){openIdentity();return}
+ if(source==='feishu'){
+  if(!chat){openChats();return}
+  notice(`正在拉取最近 ${messageCount} 条消息…`);
+  const d=await api('feishu/messages',{chat,count:messageCount});
+  stores[key()]=mergeMessages(rows(),d.messages);save();
+  // Use the actual fetched snapshot, not stale cached messages that were recalled.
+  const ids=new Set(d.messages.map(m=>m.id));
+  prepareClassification(rows().filter(m=>m.chatId===chat.id&&ids.has(m.id)).sort((a,b)=>a.time-b.time).slice(-messageCount),d.messages.length);
+  notice('');
+ }else prepareClassification(visibleMessages(),visibleMessages().length);
+});
+function prepareClassification(messages,fetched){
+ const all=messages.filter(m=>m.supported!==false);
+ if(!all.length){toast('当前范围内没有可分类的文字消息');return}
+ proposal={messages:structuredClone(all),viewer:structuredClone(currentViewer()),storeKey:key()};
+ $('#consentText').textContent=`目标 ${messageCount} 条，本次取得 ${fetched} 条，其中 ${all.length} 条文字消息将分类；身份：${proposal.viewer.name}。手动分类和完成状态保留。`;
+ $('#consentPreview').innerHTML=all.map(m=>`<p><b>${esc(m.sender)}</b> · ${esc(m.group)}<br>${esc(m.text)}</p>`).join('');$('#consentDialog').showModal();
+}
+
+$('#messageCount').onchange=()=>{const n=Number($('#messageCount').value);if(!Number.isInteger(n)||n<1||n>200){toast('请输入 1–200 的整数');$('#messageCount').value=messageCount;return}messageCount=n;lastRun='';render()};
 $('#confirmClassify').onclick=()=>task(async()=>{
  const p=proposal;if(!p)return;$('#consentDialog').close();let completed=0;const started=Date.now();
  const batches=[];let batch=[],chars=0;

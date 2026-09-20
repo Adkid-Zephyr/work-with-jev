@@ -48,7 +48,7 @@ The approximately 10-minute device-link lifetime is **not** the login lifetime. 
 npx lark-cli auth status --json --verify
 ```
 
-Then check the connection in Settings, choose Feishu messages, search for a chat, and describe your identity. Select **1–200 messages, default 50**. Refresh after increasing the count. Click Classify and review the messages before confirming transmission to TypeSafe.
+Then check the connection in Settings, choose Feishu messages, search for a chat, and describe your identity. Select **1–200 messages, default 50**. The board follows this limit. Classify automatically fetches the requested recent messages before showing the transmission preview. Click Classify and review the messages before confirming transmission to TypeSafe.
 
 Fetching messages does not itself send them to Jev.
 

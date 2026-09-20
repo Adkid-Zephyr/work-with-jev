@@ -80,3 +80,17 @@ test('跨群保存：切群隔离看板，待办去重、拖动、完成同步�
  fresh.doc.querySelector('[data-queue-action="remove"]').click();assert.equal(fresh.doc.querySelectorAll('.queue-item').length,1);assert.equal(JSON.parse(fresh.w.localStorage.getItem('jev-inbox-v1')).stores[k].length,3);
  fresh.dom.window.close();dom.window.close();
 });
+
+test('修改条数更新看板，增加条数后分类会补拉，预览只用本次范围',async()=>{
+ const viewer={name:'测试',role:'运营',openId:'test'},k='feishu|'+JSON.stringify(viewer);
+ const msg=i=>({id:'m'+i,chatId:'oc_test',group:'测试群',text:'工作 '+i,time:i,sender:'成员',supported:true,category:'todo',status:'open'});
+ const state={source:'feishu',viewer,chat:{id:'oc_test',name:'测试群'},messageCount:50,stores:{[k]:Array.from({length:50},(_,i)=>msg(100-i))}};
+ const {dom,w,doc}=await boot(JSON.stringify(state),true);
+ const input=doc.querySelector('#messageCount');input.value='10';input.dispatchEvent(new w.Event('change'));assert.equal(doc.querySelectorAll('.card').length,10);
+ input.value='75';input.dispatchEvent(new w.Event('change'));
+ let count;w.fetch=async(url,options)=>{assert.equal(url,'/api/feishu/messages');count=JSON.parse(options.body).count;return {ok:true,json:async()=>({messages:Array.from({length:75},(_,i)=>msg(100-i)),hasMore:true})}};
+ doc.querySelector('#classifyBtn').click();await new Promise(r=>setImmediate(r));
+ assert.equal(count,75);assert.equal(doc.querySelectorAll('#consentPreview p').length,75);assert.equal(doc.querySelectorAll('.card').length,75);
+ input.value='5';input.dispatchEvent(new w.Event('change'));assert.equal(doc.querySelectorAll('.card').length,5);assert.equal(JSON.parse(w.localStorage.getItem('jev-inbox-v1')).stores[k].length,75);
+ dom.window.close();
+});
