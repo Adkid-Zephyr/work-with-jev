@@ -24,7 +24,7 @@
 
 ![Work with Jev — workflow illustration](docs/assets/workflow.svg)
 
-Choose a Feishu chat and describe your role. Jev helps sort messages into **urgent**, **my tasks**, **worth reading**, and **skip for now**. Check off what you finish. Click the chat name to search or switch chats. Add messages to a persistent cross-chat task queue and drag to reorder; switching chats preserves your previous work.
+Choose a Feishu chat or receive WeCom bot messages, then describe your role. Jev helps sort messages into **urgent**, **my tasks**, **worth reading**, and **skip for now**. Check off what you finish. Click the chat name to search or switch chats. Add messages to a persistent cross-chat task queue and drag to reorder; switching chats preserves your previous work.
 
 | Urgent | My tasks | Worth reading | Skip for now |
 | --- | --- | --- | --- |
@@ -72,6 +72,12 @@ Then check the connection in Settings, choose Feishu messages, search for a chat
 
 Fetching messages does not itself send them to Jev.
 
+## Connect WeCom
+
+In Settings, enter a smart bot Bot ID and long-connection Secret. Enable API mode / persistent connection in WeCom first. After authentication, DM the bot or @mention it in a group. Select WeCom messages; an empty search lists received conversations.
+
+This receives bot interactions, not arbitrary chat history. No public callback URL is required. See [setup and access boundaries](docs/WECOM.md). Live verification requires your own credentials.
+
 ## Handle unclassified messages
 
 Choose a category manually or add directly to the task queue (also assigns My tasks). These operations do not call Jev. Official message app links appear as Open in Feishu, including in task details and the queue. Refresh older cached messages to retrieve links; missing links are indicated rather than invented. The Feishu client must be signed in with access to the conversation.
@@ -93,9 +99,9 @@ Probabilities are available in message details; ambiguous signals are marked for
 
 ## Integrations
 
-- **Implemented:** preset examples, Feishu user-authorized chat reads, Jev classification, persistent local completion and manual categories.
+- **Implemented:** preset examples, Feishu user-authorized chat reads, WeCom smart-bot persistent connection, Jev classification, persistent local completion and manual categories.
 - **Extension point:** read-only adapters in `lib/providers/`. See [the guide](docs/EXTENDING.md) and [template](lib/providers/example.mjs).
-- **Not implemented:** WeCom, DingTalk, Slack, or other work apps. A bot's message callback is not equivalent to unrestricted chat history access.
+- **Not implemented:** WeCom conversation archiving, DingTalk, Slack, or other work apps. A bot's message callback is not equivalent to unrestricted chat history access.
 
 ## Data and limits
 
@@ -107,7 +113,8 @@ Probabilities are available in message details; ambiguous signals are marked for
 - Message text, categories, completion, and cross-chat task order live in browser localStorage. Clearing site data removes them. Use the same browser and URL.
 - Keys entered in the UI remain in server memory and must be entered again after a restart. For persistent local configuration, copy `.env.example` to `.env` and set `TYPESAFE_API_KEY`. Never commit credentials.
 - Confirmed classification sends selected messages and identity context to TypeSafe and uses your API credit. Feishu credentials are managed by its CLI.
-- Text and rich-text messages only. No attachment downloads, OCR, or transcription. Bounded pagination does not guarantee full history or complete thread replies.
+- WeCom keeps at most 1,000 received messages in the ignored local file `.data/wecom-inbox.json`; timestamps are receipt times. Credentials are held in memory or supplied through local environment configuration.
+- Text, rich text, and platform-supplied WeCom voice transcripts only. No attachment downloads, OCR, or transcription. Bounded pagination does not guarantee full history or complete thread replies.
 - Selections are split into requests of up to 20 messages and approximately 20,000 body characters. Batches do not share context. Completed batches survive a later failure.
 - Probabilities are not accuracy guarantees. Initial thresholds are not calibrated on your workload. The app does not reply, delete messages, execute tasks, or automatically merge/close tasks across updates.
 - No public end-to-end accuracy or speed benchmark is claimed. Offline tests do not validate live platform or model behavior.

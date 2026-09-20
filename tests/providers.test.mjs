@@ -1,10 +1,10 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createFeishuProvider} from '../lib/providers/feishu.mjs';
 import {createProviders} from '../lib/providers/index.mjs';
-test('provider boundary: only Feishu registered, user identity required',async()=>{
+test('provider boundary: Feishu and WeCom registered, user identity required',async()=>{
  const calls=[];const p=createFeishuProvider(async args=>{calls.push(args);return {ok:true,data:{chats:[{chat_id:'oc_demo',name:'演示'}]}}});
  assert.deepEqual(await p.search({query:'演示'}),{chats:[{id:'oc_demo',name:'演示'}]});assert.ok(calls[0].includes('user'));
- assert.deepEqual([...createProviders(()=>{}).keys()],['feishu']);await assert.rejects(p.search({query:''}));
+ assert.deepEqual([...createProviders(()=>{}).keys()],['feishu','wecom']);await assert.rejects(p.search({query:''}));
 });
 test('pagination retrieves requested count in <=50-item pages, validates count',async()=>{
  let n=0;const calls=[];

@@ -22,11 +22,14 @@ const storageKey='jev-inbox-v1';let persisted={};try{persisted=JSON.parse(localS
 let source=persisted.source||'demo',person=persisted.person||'wang',viewer=persisted.viewer||{name:'',role:'',openId:''},chat=persisted.chat||null,stores=persisted.stores||{},view='open',nonce='',hasKey=false,busy=false,toastTimer,proposal=null,lastRun='';
 let messageCount=Number.isInteger(persisted.messageCount)&&persisted.messageCount>=1&&persisted.messageCount<=200?persisted.messageCount:50;
 let queues=persisted.queues||{},draggedTask=null,pendingExpanded=false,noiseExpanded=false;
+let sourceViewers=persisted.sourceViewers||{feishu:viewer},pickerSource=source==='wecom'?'wecom':'feishu';
+const sourceLabel=id=>id==='wecom'?'企业微信':'飞书';
+function changeSource(next){if(source!=='demo')sourceViewers[source]=viewer;if(next!=='demo')viewer=sourceViewers[next]||{name:'',role:'',openId:''};source=next;}
 const viewerKey=()=>source==='demo'?person:JSON.stringify(viewer);
 const key=()=>source+'|'+viewerKey();
 function demoRows(){let idx=['wang','li','chen'].indexOf(person)+3;return examples.map((x,i)=>({id:'demo-'+i,text:x[2],sender:x[0],time:new Date('2026-09-20T'+x[1]+':00+08:00').getTime(),group:'周五上线项目组',chatId:'demo-launch',source:'demo',supported:true,category:x[idx],status:'open',starred:false,result:{origin:'preset',review:false}}));}
 function rows(){if(!stores[key()])stores[key()]=source==='demo'?demoRows():[];return stores[key()];}
-function save(){try{localStorage.setItem(storageKey,JSON.stringify({source,person,viewer,chat,stores,messageCount,queues}));}catch{notice('浏览器存储空间不足，本次改动可能无法在刷新后保留。');}}
+function save(){if(source!=='demo')sourceViewers[source]=viewer;try{localStorage.setItem(storageKey,JSON.stringify({source,person,viewer,chat,stores,messageCount,queues,sourceViewers}));}catch{notice('浏览器存储空间不足，本次改动可能无法在刷新后保留。');}}
 function notice(s){
  document.querySelectorAll('.dialog-notice').forEach(el=>el.remove());
  const dialog=document.querySelector('dialog[open]');
@@ -55,9 +58,9 @@ function render(){
  for(const m of all) if(m.status==='later')m.status='open';
  $('#identityText').textContent=current.name?`我是${current.name}`:'设置我的身份';
  $('#sourceSelect').value=source;
- $('#pullBtn').classList.toggle('hidden',source!=='feishu');$('#resetBtn').classList.toggle('hidden',source!=='demo');
+ $('#pullBtn').classList.toggle('hidden',source==='demo');$('#resetBtn').classList.toggle('hidden',source!=='demo');
  $('#sourceName').textContent=chat?.name?chat.name+' ⌄':'选择群聊';$('#sourceName').classList.toggle('hidden',source==='demo');
- $('#modeLabel').textContent=source==='demo'?(all.some(m=>m.result?.origin==='jev')?'示例 · Jev 实测':'示例 · 预设分类'):'飞书 · 当前 '+all.length+' / '+messageCount+' 条';
+ $('#modeLabel').textContent=source==='demo'?(all.some(m=>m.result?.origin==='jev')?'示例 · Jev 实测':'示例 · 预设分类'):sourceLabel(source)+' · 当前 '+all.length+' / '+messageCount+' 条';
  $('#classifyBtn').textContent=busy?'分类中…':'分类';
  const pending=all.filter(m=>!m.category);$('#pending').classList.toggle('hidden',!pending.length);
  $('#pending').innerHTML=`<details ${pendingExpanded?'open':''}><summary>${pending.length} 条待分类消息</summary>${pending.map(m=>`<article class="pending-item" data-id="${esc(m.id)}"><div class="card-meta">${esc(m.sender)} · ${esc(m.group)}</div><button class="pending-text" data-pending="detail" title="查看全文"><p>${esc(m.text)}${!m.supported?'（附件待确认）':''}</p></button><div class="pending-actions">${messageLink(m)}<select data-pending="category" aria-label="手动分类"><option value="">手动分类…</option>${Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.name}</option>`).join('')}</select><button data-pending="enqueue" class="quiet" ${isQueued(m)?'disabled':''}>${isQueued(m)?'已加入待办':'+ 加入待办'}</button></div></article>`).join('')}</details>`;
@@ -89,7 +92,7 @@ $('#pending').addEventListener('click',e=>{const b=e.target.closest('button[data
 function card(m){const t=new Date(m.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});return `<article class="card ${m.status==='done'?'done-card':''}" data-id="${esc(m.id)}"><input class="complete-check" type="checkbox" data-action="complete" aria-label="完成：${esc(m.text.slice(0,30))}" ${m.status==='done'?'checked':''}><button class="card-detail" data-action="detail" aria-label="查看消息原文"><div class="card-meta">${esc(m.sender)}<time>${t}</time></div><p class="card-text">${esc(m.text)}</p>${m.result?.review?'<span class="review">待确认</span>':''}</button><button class="queue-add" data-action="enqueue" ${queue().some(t=>t.message.id===m.id&&t.message.chatId===m.chatId)?'disabled':''}>${queue().some(t=>t.message.id===m.id&&t.message.chatId===m.chatId)?'已加入待办':'+ 加入待办'}</button>${messageLink(m)}</article>`;}
 $('#board').addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b||busy)return;const m=rows().find(m=>m.id===b.closest('[data-id]').dataset.id);if(!m)return;if(b.dataset.action==='enqueue'){enqueue(m);return}showDetail(m)});
 $('#board').addEventListener('change',e=>{if(e.target.dataset.action!=='complete')return;const m=rows().find(m=>m.id===e.target.closest('[data-id]').dataset.id);if(!m)return;m.status=e.target.checked?'done':'open';for(const t of queue())if(t.message.id===m.id&&t.message.chatId===m.chatId)t.status=m.status;render();});
-function queueKey(){return source==='demo'?'queue|demo|'+person:'queue|feishu|'+(viewer.openId||'name:'+viewer.name)}
+function queueKey(){return source==='demo'?'queue|demo|'+person:'queue|'+source+'|'+(viewer.openId||'name:'+viewer.name)}
 function queue(){
  const target=queueKey(),list=queues[target]??(queues[target]=[]);
  for(const old of Object.keys(queues)){
@@ -102,8 +105,8 @@ function queue(){
  return list;
 }
 function retainQueueForViewer(previous){
- const oldKey=previous.openId?'queue|feishu|'+previous.openId:'queue|feishu|name:'+previous.name;
- const newKey=viewer.openId?'queue|feishu|'+viewer.openId:'queue|feishu|name:'+viewer.name;
+ const oldKey='queue|'+source+'|'+(previous.openId||'name:'+previous.name);
+ const newKey='queue|'+source+'|'+(viewer.openId||'name:'+viewer.name);
  if(oldKey===newKey||(previous.openId&&viewer.openId&&previous.openId!==viewer.openId))return;
  const target=queues[newKey]??(queues[newKey]=[]),ids=new Set(target.map(t=>t.id));
  for(const t of queues[oldKey]||[])if(!ids.has(t.id)){target.push(t);ids.add(t.id)}
@@ -127,23 +130,34 @@ for(const b of document.querySelectorAll('[data-close]')){b.setAttribute('aria-l
 for(const d of document.querySelectorAll('dialog'))d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}});
 $('#settingsBtn').onclick=()=>$('#settingsDialog').showModal();
 $('#saveKey').onclick=()=>task(async()=>{const d=await api('key',{key:$('#keyInput').value});hasKey=d.hasKey;$('#keyInput').value='';toast(hasKey?'密钥已保存在本机服务内存':'已清除密钥')});
-$('#checkFeishu').onclick=()=>task(async()=>{try{const d=await api('feishu/status');$('#feishuStatus').textContent=d.connected?`已连接：${d.name||'飞书用户'}`:`登录状态：${d.status}`;const previous={...viewer};if(source==='feishu')queue();if(d.name&&!viewer.name)viewer.name=d.name;if(d.openId)viewer.openId=d.openId;retainQueueForViewer(previous);}catch(e){$('#feishuStatus').textContent=e.message;throw e}});
-$('#sourceSelect').onchange=()=>{if($('#sourceSelect').value==='demo'){source='demo';lastRun='';notice('');render()}else{openChats();$('#sourceSelect').value=source}};
-$('#searchChats').onclick=()=>task(async()=>{if(!$('#chatQuery').value.trim())throw new Error('请输入群名称关键词');const d=await api('feishu/search',{query:$('#chatQuery').value});$('#chatResults').innerHTML=d.chats.map((c,i)=>`<button class="chat-option" data-index="${i}"><span>${esc(c.name)}</span><span>选择并拉取 →</span></button>`).join('')||'<p>没有找到匹配的群。请换一个关键词，或确认当前账号可访问该群。</p>';$('#chatResults').onclick=e=>{const b=e.target.closest('[data-index]');if(b)selectChat(d.chats[Number(b.dataset.index)])};});
+$('#checkFeishu').onclick=()=>task(async()=>{try{const d=await api('feishu/status');$('#feishuStatus').textContent=d.connected?`已连接：${d.name||'飞书用户'}`:`登录状态：${d.status}`;const previous={...(source==='feishu'?viewer:sourceViewers.feishu||{})};if(source==='feishu')queue();const next={...previous,name:previous.name||d.name||'',openId:d.openId||previous.openId||''};sourceViewers.feishu=next;if(source==='feishu'){viewer=next;retainQueueForViewer(previous)}}catch(e){$('#feishuStatus').textContent=e.message;throw e}});
+const wecomStatuses={connected:'已连接',connecting:'正在连接',reconnecting:'正在重连',disconnected:'已断开',not_configured:'未配置',error:'连接失败，请检查凭证、网络或后台配置',replaced:'连接被其他客户端替换'};
+function showWecomStatus(d){$('#wecomStatus').textContent=`${wecomStatuses[d.status]||d.status} · 已接收 ${d.received||0} 条。${d.warning||''}`;}
+$('#connectWecom').onclick=()=>task(async()=>{const secret=$('#wecomSecret').value;$('#wecomSecret').value='';const d=await api('wecom/connect',{botId:$('#wecomBotId').value.trim(),secret});showWecomStatus(d)});
+$('#checkWecom').onclick=()=>task(async()=>showWecomStatus(await api('wecom/status')));
+$('#disconnectWecom').onclick=()=>task(async()=>showWecomStatus(await api('wecom/disconnect')));
+$('#sourceSelect').onchange=()=>{if($('#sourceSelect').value==='demo'){changeSource('demo');lastRun='';notice('');render()}else{openChats($('#sourceSelect').value);$('#sourceSelect').value=source}};
+$('#searchChats').onclick=()=>task(async()=>{if(pickerSource==='feishu'&&!$('#chatQuery').value.trim())throw new Error('请输入群名称关键词');const d=await api(pickerSource+'/search',{query:$('#chatQuery').value});$('#chatResults').innerHTML=d.chats.map((c,i)=>`<button class="chat-option" data-index="${i}"><span>${esc(c.name)}</span><span>选择并拉取 →</span></button>`).join('')||`<p>${pickerSource==='wecom'?'暂无匹配会话。请先连接机器人，再私聊它或在群里 @它，然后重新搜索。':'没有找到匹配的群。请换一个关键词，或确认当前账号可访问该群。'}</p>`;$('#chatResults').onclick=e=>{const b=e.target.closest('[data-index]');if(b)selectChat(d.chats[Number(b.dataset.index)])};});
 $('#chatQuery').onkeydown=e=>{if(e.key==='Enter')$('#searchChats').click()};
-function openChats(){
+function openChats(provider=source==='demo'?'feishu':source){
+ pickerSource=provider;
  notice('');
- const stored=stores['feishu|'+JSON.stringify(viewer)]||[];
+ const selectedViewer=source===provider?viewer:sourceViewers[provider]||{name:'',role:'',openId:''};
+ const stored=stores[provider+'|'+JSON.stringify(selectedViewer)]||[];
+ $('#sourceHelp').textContent=provider==='wecom'?'只列出本机机器人已收到消息的会话，不含全群历史；首次可留空搜索。群名以平台会话 ID 显示。':'按所选条数拉取群里的最近消息，不会自动发送给 Jev。';
+ $('#chatResults').innerHTML='<p>'+ (provider==='wecom'?'点击搜索查看已接收的会话。':'输入群名称关键词搜索。')+'</p>';
+ $('#chatQuery').value='';
  const chats=[...new Map(stored.map(m=>[m.chatId,{id:m.chatId,name:m.group}])).values()];
  $('#recentChats').innerHTML=chats.length?'<p>已整理的群聊</p>'+chats.map((c,i)=>`<button class="chat-option" data-recent="${i}"><span>${esc(c.name)}</span><span>打开已保存 →</span></button>`).join(''):'';
  $('#recentChats').onclick=e=>{const b=e.target.closest('[data-recent]');if(b)selectChat(chats[Number(b.dataset.recent)])};
  $('#sourceDialog').showModal();$('#chatQuery').focus();
 }
-$('#sourceName').onclick=openChats;
+$('#sourceName').onclick=()=>openChats();
 async function selectChat(c,refresh=false){await task(async()=>{
- const targetKey='feishu|'+JSON.stringify(viewer),cached=(stores[targetKey]||[]).some(m=>m.chatId===c.id);
- if(!refresh&&cached){chat=c;source='feishu';lastRun='';$('#sourceDialog').close();return;}
- const d=await api('feishu/messages',{chat:c,count:messageCount});chat=c;source='feishu';view='open';stores[key()]=mergeMessages(rows(),d.messages);lastRun=`本次拉取 ${d.messages.length} 条消息${d.hasMore?'，还有更早消息未加载':''}。尚未发送给 Jev。`;$('#sourceDialog').close();toast('消息已拉取');if(!viewer.name)openIdentity()
+ const provider=refresh?source:pickerSource;const selectedViewer=source===provider?viewer:sourceViewers[provider]||{name:'',role:'',openId:''};
+ const targetKey=provider+'|'+JSON.stringify(selectedViewer),cached=(stores[targetKey]||[]).some(m=>m.chatId===c.id);
+ if(!refresh&&cached){chat=c;changeSource(provider);lastRun='';$('#sourceDialog').close();return;}
+ const d=await api(provider+'/messages',{chat:c,count:messageCount});chat=c;changeSource(provider);view='open';stores[key()]=mergeMessages(rows(),d.messages);lastRun=`本次拉取 ${d.messages.length} 条消息${d.hasMore?'，还有更早消息未加载':''}。尚未发送给 Jev。`;$('#sourceDialog').close();toast('消息已拉取');if(!viewer.name)openIdentity()
 });}
 $('#pullBtn').onclick=()=>{if(chat)selectChat(chat,true);else openChats()};
 function openIdentity(){const v=currentViewer();$('#viewerName').value=v.name;$('#viewerRole').value=v.role;$('#demoIdentities').classList.toggle('hidden',source!=='demo');$('#viewerName').disabled=source==='demo';$('#viewerRole').disabled=source==='demo';$('#saveIdentity').classList.toggle('hidden',source==='demo');$('#identityDialog').showModal()}
@@ -154,10 +168,10 @@ $('#resetBtn').onclick=()=>{if(confirm('重置示例分类与勾选？')){stores
 $('#classifyBtn').onclick=()=>task(async()=>{
  if(!hasKey){$('#settingsDialog').showModal();toast('先填写 Jev API Key，即可运行真实分类');return}
  if(!currentViewer().name){openIdentity();return}
- if(source==='feishu'){
+ if(source!=='demo'){
   if(!chat){openChats();return}
   notice(`正在拉取最近 ${messageCount} 条消息…`);
-  const d=await api('feishu/messages',{chat,count:messageCount});
+  const d=await api(source+'/messages',{chat,count:messageCount});
   stores[key()]=mergeMessages(rows(),d.messages);save();
   // Use the actual fetched snapshot, not stale cached messages that were recalled.
   const ids=new Set(d.messages.map(m=>m.id));

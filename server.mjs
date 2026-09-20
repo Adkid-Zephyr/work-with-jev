@@ -16,7 +16,9 @@ async function lark(args) {
  catch(e) {let detail;try{detail=JSON.parse(e.stderr||e.stdout||'').error;}catch{}
  throw new Error(detail?.message?`飞书：${detail.message}${detail.missing_scopes?.length?'；缺少权限：'+detail.missing_scopes.join(', '):''}`:e.code==='ENOENT'?'未安装飞书 CLI，请先运行 npm install':e.killed?'飞书请求超时，请检查网络与登录状态':'飞书尚未连接或请求失败。请在「连接设置」完成应用配置和登录。');}
 }
-const providers=createProviders(lark);
+const providers=createProviders(lark,{wecom:{cachePath:join(root,'.data/wecom-inbox.json')}});
+if(process.env.WECOM_BOT_ID&&process.env.WECOM_BOT_SECRET)providers.get('wecom').configure({botId:process.env.WECOM_BOT_ID,secret:process.env.WECOM_BOT_SECRET}).catch(()=>console.error('企业微信自动连接失败，请在设置中检查'));
+
 function send(res,status,value){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));}
 async function body(req){let s='';for await(const chunk of req){s+=chunk;if(Buffer.byteLength(s)>350000)throw new Error('请求过大，请缩短消息');}return JSON.parse(s||'{}');}
 const server=http.createServer(async(req,res)=>{
@@ -30,6 +32,8 @@ const server=http.createServer(async(req,res)=>{
    if(req.method!=='POST'||req.headers['x-demo-token']!==nonce){send(res,403,{error:'请刷新页面后重试'});return;}
    const b=await body(req);
    if(url.pathname==='/api/key'){if(typeof b.key!=='string'||b.key.length>500)throw new Error('密钥格式不正确');apiKey=b.key.trim();send(res,200,{hasKey:!!apiKey});return;}
+   if(url.pathname==='/api/wecom/connect'){send(res,200,await providers.get('wecom').configure(b));return;}
+   if(url.pathname==='/api/wecom/disconnect'){send(res,200,await providers.get('wecom').disconnect());return;}
    const sourceRoute=url.pathname.match(/^\/api\/([a-z][a-z0-9_-]*)\/(status|search|messages)$/);
    if(sourceRoute){
     const provider=providers.get(sourceRoute[1]);

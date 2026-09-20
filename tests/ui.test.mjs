@@ -138,3 +138,16 @@ test('弹窗内显示错误；异步操作锁住可变输入并恢复原禁用�
  resolve({ok:true,json:async()=>({chats:[]})});await new Promise(r=>setImmediate(r));
  assert.ok(!doc.querySelector('#messageCount').disabled);assert.equal(doc.querySelector('.dialog-notice'),null);dom.window.close();
 });
+
+test('企业微信独立来源：搜索、取消息、人工入队，与飞书身份和队列隔离',async()=>{
+ const {dom,w,doc}=await boot();const calls=[];
+ w.fetch=async(url,opt)=>{calls.push(url);return {ok:true,json:async()=>url.endsWith('/search')?{chats:[{id:'wecom:bot:group:c1',name:'群聊 c1'}]}:{messages:[{id:'wecom:bot:m1',chatId:'wecom:bot:group:c1',group:'群聊 c1',text:'企微测试消息',sender:'u1',time:1000,source:'wecom',category:null,status:'open',supported:true}]}}};
+ const source=doc.querySelector('#sourceSelect');source.value='wecom';source.dispatchEvent(new w.Event('change'));
+ assert.match(doc.querySelector('#sourceHelp').textContent,/机器人/);doc.querySelector('#searchChats').click();await new Promise(r=>setImmediate(r));
+ doc.querySelector('#chatResults button').click();await new Promise(r=>setImmediate(r));
+ assert.deepEqual(calls,['/api/wecom/search','/api/wecom/messages']);
+ doc.querySelector('#viewerName').value='企微用户';doc.querySelector('#viewerRole').value='产品';doc.querySelector('#saveIdentity').click();
+ doc.querySelector('[data-pending="enqueue"]').click();assert.equal(doc.querySelectorAll('.queue-item').length,1);
+ const saved=JSON.parse(w.localStorage.getItem('jev-inbox-v1'));assert.equal(saved.source,'wecom');assert.equal(saved.sourceViewers.wecom.name,'企微用户');assert.ok(saved.queues['queue|wecom|name:企微用户']);
+ source.value='demo';source.dispatchEvent(new w.Event('change'));assert.equal(doc.querySelectorAll('.queue-item').length,0);dom.window.close();
+});

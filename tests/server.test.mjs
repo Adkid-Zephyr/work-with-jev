@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {spawn} from 'node:child_process';import {once} from 'node:events';import http from 'node:http';
 test('本机 API：外域与伪 Host 拒绝；密钥不回显；缺少模型凭证不产生结果',async()=>{
  const port=14973,base=`http://127.0.0.1:${port}`;
- const child=spawn(process.execPath,['server.mjs'],{cwd:new URL('..',import.meta.url),env:{...process.env,PORT:String(port),TYPESAFE_API_KEY:''},stdio:['ignore','pipe','pipe']});
+ const child=spawn(process.execPath,['server.mjs'],{cwd:new URL('..',import.meta.url),env:{...process.env,PORT:String(port),TYPESAFE_API_KEY:'',WECOM_BOT_ID:'',WECOM_BOT_SECRET:''},stdio:['ignore','pipe','pipe']});
  try{
  await once(child.stdout,'data');const res=await fetch(base+'/api/status');const {nonce,hasKey}=await res.json();assert.equal(hasKey,false);
  const badHost=await new Promise((resolve,reject)=>{const r=http.get(base+'/api/status',{headers:{host:'evil.example'}},res=>{res.resume();resolve(res.statusCode)});r.on('error',reject)});assert.equal(badHost,403);
@@ -12,5 +12,8 @@ test('本机 API：外域与伪 Host 拒绝；密钥不回显；缺少模型凭�
  const key=await post('key',{key:'secret-test'});const output=await key.text();assert.ok(!output.includes('secret-test'));assert.equal((await (await fetch(base+'/api/status')).json()).hasKey,true);
  const noConsent=await post('classify',{messages:[{id:'a',text:'hi'}],viewer:{name:'我'}});assert.equal(noConsent.status,400);
  assert.equal((await fetch(base+'/.env')).status,404);
+ const wecom=await post('wecom/status',{});assert.equal((await wecom.json()).status,'not_configured');
+ const badBot=await post('wecom/connect',{botId:'',secret:'do-not-return'});assert.equal(badBot.status,400);assert.ok(!(await badBot.text()).includes('do-not-return'));
+ assert.equal((await fetch(base+'/.data/wecom-inbox.json')).status,404);
  }finally{child.kill();await once(child,'exit');}
 });
